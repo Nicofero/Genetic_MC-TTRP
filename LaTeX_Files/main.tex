@@ -1,0 +1,357 @@
+%%%%%%%%%%     PREÁMBULO      %%%%%%%%%%%%%%%
+
+%%%%%%%%%   Non modificar este preámbulo, salvo que se sepa ben o que se está a facer   %%%%%%%%%
+
+%%%%%%  Traballando nun Mac, se usas TeXShop, en  Preferencias -> Código -> codificación de  caracteres (UTF-8)  %%%%
+
+\documentclass[11pt,a4paper]{book}
+
+% Formato do documento
+\usepackage[papersize={210mm,297mm},lmargin=2.5cm,rmargin=2.5cm,top=3.5cm,bottom=3.5cm]{geometry}   % Marxes
+\renewcommand{\baselinestretch}{1.25}                                                               % Fixamos o interliñado
+\setlength{\parskip}{8pt}                                                                           % Separación entre parágrafos
+
+
+\usepackage{amsmath,amsfonts,amssymb,amsthm}
+\usepackage[scr=rsfso]{mathalfa}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{latexsym,pdfsync,graphicx}
+\usepackage[nottoc]{tocbibind}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}					
+\usepackage[spanish]{babel}			
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{appendix}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{emptypage}
+\usepackage{subcaption}
+
+
+\lstset{
+  language=C,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=fullflexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  tabsize=3,
+  literate=%
+         {á}{{\'a}}1
+         {í}{{\'i}}1
+         {é}{{\'e}}1
+         {ú}{{\'u}}1
+         {ó}{{\'o}}1
+         {ñ}{{\~{n}}}1                
+         {Á}{{\'A}}1
+         {Í}{{\'I}}1
+         {É}{{\'E}}1
+         {Ú}{{\'U}}1
+         {Ó}{{\'O}}1
+         {Ñ}{{\~{N}}}1
+}
+
+
+
+
+
+
+% Cabeceira
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{\textbf{\thechapter. #1}}{}} % Formato para o capítulo: N. Nome
+\renewcommand{\sectionmark}[1]{\markright{\textbf{\thesection. #1}}}  % Formato para a sección: N.M. Nome
+
+\fancyhead[LO]{\rightmark}           % Nas páxinas impares, parte esquerda do encabezado, aparecerá o nome do capítulo
+\fancyhead[RE]{\leftmark}            % Nas páxinas pares, parte dereita do encabezado, aparecerá o nombre da sección
+\fancyhead[RO,LE]{\textbf{\thepage}} % Números de páxina nas esquinas dos encabezados
+
+\newcommand{\p}[0]{\par}
+\newcommand{\bditem}[1]{\item\textbf{#1}}
+\newcommand{\scal}[0]{\mathscr{S}}
+\newcommand{\pcal}[0]{\mathcal{P}}
+\newcommand{\xcal}[0]{\mathcal{X}}
+\newcommand{\function}[5]{\begin{tikzpicture}[node distance=1mm]
+    \node (functionName) at (0, 0) {$#1$:};
+    \node[right = of functionName] (domain) {$#2$};
+    \node[below = 2mm of domain] (element) {$#3$};
+    \node[right = 1cm of domain] (codomain) {$#4$};
+    \node at (element-|codomain) (image) {$#1(#3)=#5$};
+    \draw[-to] (domain) -- (codomain);
+    \draw[|-to] (element) -- (image);
+\end{tikzpicture}}
+
+% Para escribir pseudocódigo
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\makeatletter
+\renewcommand{\ALG@name}{Algoritmo}
+\renewcommand{\thealgorithm}{\arabic{algorithm}} % Sin el punto
+
+% Agregar el punto solo en el título del algoritmo
+\renewcommand{\fnum@algorithm}{\ALG@name~\thealgorithm.}
+\makeatother
+%%%   \pagestyle{plain}   Cando os títulos dos capítulos son moi longos, a opción por defecto das cabeceiras pode ser inapropiada;
+%%%  nestes e noutros casos semellantes, pódese usar a opción "plain", que suprime as cabeceiras, deixando soamente a numeración das páxinas.
+
+
+%%%%%%%      NON ESCRIBIR AQUÍ  (COMANDO PORTADA) %%%%%%%%%%%
+
+\newcommand{\portada}[3]{
+\thispagestyle{empty}
+
+\definecolor{azulUSC}{RGB}{13,38,120}
+
+\includegraphics[width=13cm]{logomath}
+
+\vspace*{2cm}
+
+\centerline{{\Large\bf  Traballo Fin de Grao}}
+
+\vspace{2.6cm}
+
+{\center{\Huge\bfseries\color{azulUSC} #1}\par}		
+
+\vspace{1cm}
+
+{\Large
+
+\centerline{#2}		
+
+\vspace{6.4cm}
+
+\centerline{\sf #3}        
+
+\vspace{1.25cm}
+
+\centerline{\sf UNIVERSIDADE DE SANTIAGO DE COMPOSTELA}
+}
+
+\enlargethispage{1cm}
+\clearpage
+}
+
+%%%%%%%      NON ESCRIBIR AQUÍ  (COMANDO PRIMEIRA PÁXINA) %%%%%%%%%%%
+
+\newcommand{\primeira}[3]{
+\thispagestyle{empty}
+\enlargethispage{1cm}
+\begin{center}\Large
+
+{\sf GRAO DE MATEM\'ATICAS}
+
+\bigskip
+{\bfseries Trabajo Fin de Grao}
+\vspace{4cm}
+
+{\bfseries\Huge #1} 		
+\vspace{1.2cm}
+
+{#2}		\par		     
+\end{center}
+
+\vspace{6.5cm}
+
+\begin{center}
+\Large
+{#3}	\par			    
+
+\vspace{1cm}
+{\sf UNIVERSIDADE DE SANTIAGO DE COMPOSTELA}
+\end{center}
+\clearpage
+}
+
+%%%%%%%    Teoremas   %%%%%%%%%
+
+\newtheorem{theorem}{Teorema}[chapter]
+\newtheorem{proposition}[theorem]{Proposición}
+\newtheorem{lemma}[theorem]{Lema}
+\newtheorem{corollary}[theorem]{Corolario}
+% \newtheorem{algorithm}[theorem]{Algoritmo}
+\newtheorem{axiom}[theorem]{Axioma}
+\newtheorem{case}[theorem]{Caso}
+\newtheorem{conclusion}[theorem]{Conclusión}
+\newtheorem{condition}[theorem]{Condición}
+\newtheorem{conjetura}[theorem]{Conjetura}				
+\newtheorem{criterion}[theorem]{Criterio}
+\newtheorem{ejercicio}[theorem]{Ejercicio}	
+			
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definición}
+\newtheorem{ejemplo}[theorem]{Ejemplo}				
+\newtheorem{agradecimientos}[theorem]{Agradecimientos}	
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Observación}
+\newtheorem{notation}[theorem]{Notación}
+\newtheorem{problem}[theorem]{Problema}
+\newtheorem{solution}[theorem]{Solución}
+
+\addto\captionsspanish{
+	\renewcommand{\contentsname}{\'Indice} 
+	\renewcommand\appendixname{Anexo}
+	\renewcommand\appendixpagename{Anexos}
+}
+%%%%%%%%%%%%%%%%%%   Fin do Preámbulo   %%%%%%%%%%%%%%%%
+
+
+
+
+\begin{document}
+\frontmatter
+
+%%%%%%%%%%%      PORTADA      %%%%%%%%%%%%
+
+\portada
+{Algoritmos meméticos para el MC-TTRP}		%  escribir aquí o  Título
+{Nicolás Fernández Otero}		%  escribir aquí o/a  Autor/a
+{Junio, 2025}		  	%  escribir aquí a Data de presentación, na forma:  mes, ano
+
+%%%%%%%%     PRIMEIRA PÁXINA    %%%%%%%%%%%%%%%%%%
+
+\mbox{}
+\thispagestyle{empty}
+\clearpage
+
+\setcounter{page}{1}
+
+\primeira
+{Algoritmos meméticos para el MC-TTRP}		%  escribir aquí o  Título
+{Nicolás Fernández Otero}		%  escribir aquí o/a  Autor/a
+{Junio, 2025}		  	%  escribir aquí a Data de presentación, na forma:  mes, ano
+
+\thispagestyle{empty}
+
+%%%%%%%%%%%      PROPOSTA DE TRABALLO      %%%%%%%%%%%%%%%%
+
+\vspace*{.5 cm}
+
+\chapter*{Trabajo propuesto}
+
+\vspace{1 cm}
+
+\begingroup
+\renewcommand*{\arraystretch}{2.2}
+\begin{tabular}{|l|}
+	\hline
+	
+	{\bf \'Area de Co\~necemento:  \/ } Estadística e investigación operativa.\\ \hline
+	\begin{minipage}{11.5cm}
+		{\vspace*{.2cm}
+			\bf T\'{\i}tulo:   \/ \bf Algoritmos meméticos para el MC-TTRP.
+			\vspace{.2cm}}
+	\end{minipage}\\ \hline
+	\bf Breve descrici\'on do contido\\ \hline
+	\begin{minipage}{11.5cm}
+		{\vspace*{.2cm}
+        Se estudiará el fundamento de los algoritmos meméticos y se aplicarán a la resolución del Problema de Rutas de Camiones y Tráileres de Múltiple Compartimento (MC-TTRP), crucial en la logística y gestión de flotas de vehículos. Los algoritmos meméticos combinan la exploración global con la búsqueda local, ofreciendo una solución adaptativa y eficiente. Encuentran su motivación en modelos de los sistemas naturales, que combinan el aprendizaje a lo largo de la vida de un individuo con la adaptación evolutiva de las poblaciones. Se presentará un modelo de programación matemática para el problema, y una implementación detallada y experimentos computacionales que demuestran la eficacia del enfoque propuesto en comparación con métodos tradicionales y otras heurísticas.
+		
+		\vspace{.2cm}}
+	\end{minipage}\\ \hline
+	% {\bf Recomendaci\'ons}\\ \hline
+	% \begin{minipage}{11.5cm}
+	% 	{\vspace*{.2cm}
+
+
+	% 	\vspace{.2cm}}
+	% \end{minipage}\\ \hline
+	% {\bf Outras observaci\'ons}\\ \hline
+	% \begin{minipage}{11.5cm}
+	% 	{\vspace*{.2cm}
+
+
+	% 		\vspace{.2cm}}
+	% \end{minipage}\\ \hline
+\end{tabular}
+\endgroup
+
+\clearpage
+
+\thispagestyle{empty}
+
+\tableofcontents
+
+\clearpage
+
+\thispagestyle{empty}
+
+\mbox{}
+
+\clearpage
+
+%%%%%%%%%     RESUMO---RESUMEN---ABSTRACT     %%%%%%%%%%%%%
+
+\phantomsection
+\addcontentsline{toc}{chapter}{Resumen}		
+\chapter*{}
+
+\section*{Resumen}
+
+% escribir aquí resumo en español
+
+
+
+
+\vspace{1.5cm}
+
+\section*{Abstract}
+
+
+
+% escribir aquí resumo en inglés
+
+
+
+\clearpage
+
+\thispagestyle{empty}
+
+%%%%%%%%%    INTRODUCIÓN     %%%%%%%%%%%%%%%%%%
+%%%%%%%%%    De non incluír unha INTRODUCIÓN, suprímese    %%%%%%%%%%
+
+\phantomsection
+\chapter*{Introducci\'on}\addcontentsline{toc}{chapter}{Introducci\'on}
+
+\markboth{INTRODUCCI\'ON}{INTRODUCCI\'ON}
+
+%%%%%%%%%%%     fin da INTRODUCIÓN     %%%%%%%%%%%%%
+
+\mainmatter
+
+%%%%%%%%     Póñense os Capítulos    %%%%%%%%%%%%%%%
+
+\include{chapters/geneticos}
+\include{chapters/mcttrp}
+\include{chapters/algorithm}
+\include{chapters/conclusion}
+
+%%%%%%%%     Póñense a bibliografía, Apéndices e o índice alfabético     %%%%%%%%
+\appendix
+\renewcommand{\thechapter}{\Roman{chapter}}
+\include{chapters/anexos/anexo_complejidad}
+\include{chapters/anexos/anexo_NFLT}
+
+
+
+\backmatter
+
+\bibliographystyle{plain}
+\bibliography{biblio}
+
+
+
+
+
+\end{document}
+
+
