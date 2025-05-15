@@ -2,6 +2,8 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <cmath>
+#include <array>
 
 class Client{
     private:
@@ -35,6 +37,7 @@ class Instance {
         float trailer_comp_c;
         int truck_N;
         int trailer_N;
+        int nClients;
         Client depot;
         std::vector<Client> vc_clients;
         std::vector<Client> tc_clients;
@@ -62,7 +65,7 @@ class Instance {
                 std::stringstream ss(line);
                 std::vector<float> demand;
                 if (counter == 0) { //Define instance
-                    ss >> truck_c >> trailer_c >> *(new int) >> truck_N >> trailer_N;
+                    ss >> truck_c >> trailer_c >> nClients >> truck_N >> trailer_N;
                     counter++;
                 } else if (counter == 1) { // Products and compartments
                     ss >> *(new int) >> truck_comp_c >> trailer_comp_c;
@@ -72,8 +75,7 @@ class Instance {
                     depot = Client(id, 0, x, y, demand);
                     counter++;
                 } else { // Clients
-                    ss >> id >> x >> y >> type;
-        
+                    ss >> id >> x >> y >> type;        
                     while(ss >> d){
                         demand.push_back(d);
                     }
@@ -119,10 +121,87 @@ class Instance {
                 std::cout << "\n" << std::endl;
             }
         }
+        Client getDepot() { return depot; };
+        std::vector<Client> getVc_clients() { return vc_clients; };
+        std::vector<Client> getTc_clients() { return tc_clients; };
+        int getnClients() {return nClients;};
 };
+
+// Simple matrix class
+class Matrix {
+private:
+    int rows, cols;
+    std::vector<float> data;
+
+public:
+    Matrix(int r, int c) : rows(r), cols(c), data(r * c) {}
+    Matrix() {};
+
+    float& at(int i, int j) {
+        return data[i * cols + j];
+    }
+
+    void print() const {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                std::cout << data[i * cols + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+};
+
+// Distance function
+float distance(Client a, Client b) {
+    return std::sqrt(pow(a.getX() - b.getX(), 2) + pow(a.getY() - b.getY(), 2));
+}
+
+Matrix distanceMatrix(Instance instance) {
+    int n = instance.getnClients();
+    Matrix dist(n+1, n+1);
+    // distance from depot to clients
+    for(Client client: instance.getVc_clients()){
+        dist.at(0, client.getId()) = distance(instance.getDepot(), client);
+        dist.at(client.getId(), 0) = dist.at(0, client.getId());
+    }
+    for(Client client: instance.getTc_clients()){
+        dist.at(0, client.getId()) = distance(instance.getDepot(), client);
+        dist.at(client.getId(), 0) = dist.at(0, client.getId());
+    }
+    // distance from clients to clients
+    for(Client client1: instance.getVc_clients()){
+        for(Client client2: instance.getVc_clients()){
+            if(client1.getId() != client2.getId()){
+                dist.at(client1.getId(), client2.getId()) = distance(client1, client2);
+                dist.at(client2.getId(), client1.getId()) = dist.at(client1.getId(), client2.getId());
+            }
+        }
+    }
+    for(Client client1: instance.getTc_clients()){
+        for(Client client2: instance.getTc_clients()){
+            if(client1.getId() != client2.getId()){
+                dist.at(client1.getId(), client2.getId()) = distance(client1, client2);
+                dist.at(client2.getId(), client1.getId()) = dist.at(client1.getId(), client2.getId());
+            }
+        }
+    }
+    // distance from VC clients to TC clients
+    for(Client client1: instance.getVc_clients()){
+        for(Client client2: instance.getTc_clients()){
+            dist.at(client1.getId(), client2.getId()) = distance(client1, client2);
+            dist.at(client2.getId(), client1.getId()) = dist.at(client1.getId(), client2.getId());
+        }
+    }
+    return dist;
+}
 
 int main() {
     Instance instance("instances/CHAO_MCTTRP_01.txt");
     instance.print();
+    // Example of using the distance function
+    Matrix distance_matrix;
+    distance_matrix = distanceMatrix(instance);
+    std::cout << "Distance matrix:" << std::endl;
+    distance_matrix.print();
     return 0;
 }
