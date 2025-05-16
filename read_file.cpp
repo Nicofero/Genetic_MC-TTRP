@@ -38,6 +38,7 @@ class Instance {
         int truck_N;
         int trailer_N;
         int nClients;
+        int nLoads;
         Client depot;
         std::vector<Client> vc_clients;
         std::vector<Client> tc_clients;
@@ -68,7 +69,7 @@ class Instance {
                     ss >> truck_c >> trailer_c >> nClients >> truck_N >> trailer_N;
                     counter++;
                 } else if (counter == 1) { // Products and compartments
-                    ss >> *(new int) >> truck_comp_c >> trailer_comp_c;
+                    ss >> nLoads >> truck_comp_c >> trailer_comp_c;
                     counter++;
                 } else if (counter == 2){ //Depot
                     ss >> id >> x >> y;
@@ -125,6 +126,13 @@ class Instance {
         std::vector<Client> getVc_clients() { return vc_clients; };
         std::vector<Client> getTc_clients() { return tc_clients; };
         int getnClients() {return nClients;};
+        int getTruck_N() { return truck_N; };
+        int getTrailer_N() { return trailer_N; };
+        float getTruck_comp_c() { return truck_comp_c; };
+        float getTrailer_comp_c() { return trailer_comp_c; };
+        int getnLoads() { return nLoads; };
+        int gettruck_c() { return truck_c; };
+        int gettrailer_c() { return trailer_c; };
 };
 
 // Simple matrix class
@@ -195,13 +203,114 @@ Matrix distanceMatrix(Instance instance) {
     return dist;
 }
 
-int main() {
-    Instance instance("instances/CHAO_MCTTRP_01.txt");
-    instance.print();
-    // Example of using the distance function
+// Probably the solution encoding class
+class Solution {
+    private:
+        std::vector<int> solution;
+        std::vector<float> capacity;
+        int nCompTruck;
+        int nCompTrailer;
+        int nEjes;
+        int nTruck;
+        int nTrailer;
+        int nClients;
+        int nLoads;
+    public:
+        Solution(std::vector<int> solution) : solution(std::move(solution)) {};
+        Solution(int nClients, int nTruck, int nTrailer, float truck_c, float trailer_c, float truck_comp_c, float trailer_comp_c, int nLoads){
+            int nCompTruck = int(truck_c / truck_comp_c);
+            int nCompTrailer = int(trailer_c / trailer_comp_c);
+            int nEjes = (nClients+1)*(nClients+1);
+
+            // This is a cromosome with the following structure:
+            // [x_{ij}^{kr}] + [y_{ij}^{klv}] + [U] + [V]
+            solution.resize((nEjes*nTruck*nTrailer)+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients)+(nCompTrailer*nTrailer*nLoads*nClients));
+            // [ZT] + [ZL]
+            capacity.resize((nCompTruck*nTruck*nLoads*nClients)+(nCompTrailer*nTrailer*nLoads*nClients));
+            this->nCompTruck = nCompTruck;
+            this->nCompTrailer = nCompTrailer;
+            this->nEjes = nEjes;
+            this->nTruck = nTruck;
+            this->nTrailer = nTrailer;
+            this->nClients = nClients;
+            this->nLoads = nLoads;
+        };
+        Solution() {};
+        std::vector<int> getSolution() { return solution; };
+        std::vector<int> getx() {
+            std::vector<int> x;
+            for (int i = 0; i < nEjes*nTruck*nTrailer; i++) {
+                x.push_back(solution[i]);
+            }
+            return x;
+        }
+        std::vector<int> gety() {
+            std::vector<int> y;
+            for (int i = nEjes*nTruck*nTrailer; i < nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1)); i++) {
+                y.push_back(solution[i]);
+            }
+            return y;
+        }
+        std::vector<int> getU() {
+            std::vector<int> U;
+            for (int i = nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1)); i < nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients); i++) {
+                U.push_back(solution[i]);
+            }
+            return U;
+        }
+        std::vector<int> getV() {
+            std::vector<int> V;
+            for (int i = nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients); i < nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients)+(nCompTrailer*nTrailer*nLoads*nClients); i++) {
+                V.push_back(solution[i]);
+            }
+            return V;
+        }        
+        std::vector<float> getCapacity() { return capacity; };
+        std::vector<float> getZT() {
+            std::vector<float> ZT;
+            for (int i = 0; i < nCompTruck*nTruck*nLoads*nClients; i++) {
+                ZT.push_back(capacity[i]);
+            }
+            return ZT;
+        }
+        std::vector<float> getZL() {
+            std::vector<float> ZL;
+            for (int i = nCompTruck*nTruck*nLoads*nClients; i < nCompTruck*nTruck*nLoads*nClients+(nCompTrailer*nTrailer*nLoads*nClients); i++) {
+                ZL.push_back(capacity[i]);
+            }
+            return ZL;
+        }
+        void print() {
+            for (int i : solution) {
+                std::cout << i << " ";
+            }
+            std::cout << std::endl;
+        }
+};
+
+int main(int argc, char* argv[]) {
+    // Initialize the instance
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
+        return 1;
+    }
+    std::string filename = argv[1];
+    std::cout << "Reading file: " << filename << std::endl;
+    Instance instance(filename);
+    // instance.print();
     Matrix distance_matrix;
     distance_matrix = distanceMatrix(instance);
-    std::cout << "Distance matrix:" << std::endl;
-    distance_matrix.print();
+    // std::cout << "Distance matrix:" << std::endl;
+    // distance_matrix.print();
+    // Initialize the solution
+    Solution solution(instance.getnClients(), instance.getTruck_N(), instance.getTrailer_N(), instance.gettruck_c(), instance.gettrailer_c(), instance.getTruck_comp_c(), instance.getTrailer_comp_c(), instance.getnLoads());
+    std::cout << "Size of solution:" << solution.getSolution().size() + solution.getCapacity().size() << std::endl;
+    std::cout << "Percentage of x:" << float(solution.getx().size())/float(solution.getSolution().size()) << std::endl;
+    std::cout << "Percentage of y:" << float(solution.gety().size())/float(solution.getSolution().size()) << std::endl;
+    std::cout << "Percentage of U:" << float(solution.getU().size())/float(solution.getSolution().size()) << std::endl;
+    std::cout << "Percentage of V:" << float(solution.getV().size())/float(solution.getSolution().size()) << std::endl;
+    std::cout << "Size of capacity:" << solution.getCapacity().size() << std::endl;
+    std::cout << "Percentage of ZT:" << float(solution.getZT().size())/float(solution.getCapacity().size()) << std::endl;
+    std::cout << "Percentage of ZL:" << float(solution.getZL().size())/float(solution.getCapacity().size()) << std::endl;
     return 0;
 }
