@@ -4,6 +4,14 @@
 #include <sstream>
 #include <cmath>
 #include <array>
+#include <cstdlib>
+#include <unordered_map>
+#include <algorithm>
+#include <ctime>
+#include <random>
+
+// RNG setting
+std::mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
 
 class Client{
     private:
@@ -43,7 +51,7 @@ class Instance {
         std::vector<Client> vc_clients;
         std::vector<Client> tc_clients;
     public:
-        Instance(std::string filename) {
+        Instance(std::string filename,int mode = 0) {
             std::ifstream file(filename);
             int counter = 0;
             int id;
@@ -65,9 +73,15 @@ class Instance {
                 }
                 std::stringstream ss(line);
                 std::vector<float> demand;
-                if (counter == 0) { //Define instance
+                if (counter == 0 ) { //Define instance
                     ss >> truck_c >> trailer_c >> nClients >> truck_N >> trailer_N;
                     counter++;
+                    if (mode == 1) {
+                        counter++;
+                        nLoads = 1;
+                        truck_comp_c = truck_c;
+                        trailer_comp_c = trailer_c;
+                    }
                 } else if (counter == 1) { // Products and compartments
                     ss >> nLoads >> truck_comp_c >> trailer_comp_c;
                     counter++;
@@ -76,8 +90,13 @@ class Instance {
                     depot = Client(id, 0, x, y, demand);
                     counter++;
                 } else { // Clients
-                    ss >> id >> x >> y >> type;        
-                    while(ss >> d){
+                    if (mode == 0){
+                        ss >> id >> x >> y >> type;        
+                        while(ss >> d){
+                            demand.push_back(d);
+                        }
+                    }else{
+                        ss >> id >> x >> y >> d >> type;
                         demand.push_back(d);
                     }
                     if(type == 0){
@@ -133,6 +152,22 @@ class Instance {
         int getnLoads() { return nLoads; };
         int gettruck_c() { return truck_c; };
         int gettrailer_c() { return trailer_c; };
+        std::vector<float> getAllDemand(){
+            std::vector<float> allDemand;
+            int i;
+            float demand;
+            for(i=0;i<nLoads;i++){
+                demand = 0;
+                for(Client client: vc_clients){
+                    demand+= client.getDemand()[i];
+                }
+                for(Client client: tc_clients){
+                    demand+= client.getDemand()[i];
+                }
+                allDemand.push_back(demand);
+            }
+            return allDemand;
+        }
 };
 
 // Simple matrix class
@@ -288,6 +323,59 @@ class Solution {
         }
 };
 
+// PMX function for the crossover
+std::vector<std::vector<int>> PMX (std::vector<int> &parent1, std::vector<int>& parent2){
+    int size = parent1.size();
+    std::vector<int> child1(size, -1);
+    std::vector<int> child2(size, -1);
+
+    // Random number generation setup    
+    std::uniform_int_distribution<int> dist(1, size-1);
+
+    int start = dist(rng);
+    int end = dist(rng);
+    if (start > end) std::swap(start, end);
+
+    std::cout << "Start: " << start << "; End: " << end << std::endl;
+
+    // Step 1: Copy crossover segment
+    for (int i = start; i <= end; ++i) {
+        child1[i] = parent2[i];
+        child2[i] = parent1[i];
+    }
+    // std::cout << "Child 1: ";
+    // for (int i=0;i<size;i++) std::cout << child1[i] << " "; 
+    // std::cout << "\nChild 2: ";
+    // for (int i=0;i<size;i++) std::cout << child2[i] << " "; 
+    // std::cout << std::endl;
+    // Helper function to resolve mapping conflicts
+    auto fill_child = [&](std::vector<int>& child, const std::vector<int>& parent, 
+                          const std::vector<int>& segment, const std::vector<int>& mappedSegment) {
+        for (int i = 0; i < size; ++i) {
+            if (i >= start && i <= end) continue;
+
+            int gene = parent[i];
+            while (std::find(segment.begin(), segment.end(), gene) != segment.end()) {
+                auto it = std::find(segment.begin(), segment.end(), gene);
+                int index = static_cast<int>(std::distance(segment.begin(), it));
+                gene = mappedSegment[index];
+                std::cout << "Start: " << start << "; End: " << end << std::endl;
+            }
+            child[i] = gene;
+        }
+    };
+
+    // Build mappings from crossover segment
+    std::vector<int> seg1(parent1.begin() + start, parent1.begin() + end + 1);
+    std::vector<int> seg2(parent2.begin() + start, parent2.begin() + end + 1);
+
+    // Step 2: Fill in the rest of the children
+    fill_child(child1, parent1, seg2, seg1);
+    fill_child(child2, parent2, seg1, seg2);
+
+    return {child1, child2};
+}
+
 int main(int argc, char* argv[]) {
     // Initialize the instance
     if (argc < 2) {
@@ -296,21 +384,42 @@ int main(int argc, char* argv[]) {
     }
     std::string filename = argv[1];
     std::cout << "Reading file: " << filename << std::endl;
-    Instance instance(filename);
+    std::string title = filename.substr(filename.find("/")+1,filename.size());
+    title.erase(0,title.find("_")+1);
+    title = title.substr(0,title.find("_"));
+    int mode = (title == "TTRP");
+    // std::cout << mode << std::endl;
+
+    Instance instance(filename,mode);
     // instance.print();
     Matrix distance_matrix;
     distance_matrix = distanceMatrix(instance);
+
+    std::cout << instance.getAllDemand()[0] << std::endl;
+    std::cout << "Needed trucks: " << instance.getAllDemand()[0]/instance.gettruck_c() << std::endl;
+
+    std::vector<int> p1 = {1,6,3,4,5,2,9,7,8};
+    std::vector<int> p2 = {4,3,1,2,6,5,8,9,7};
+
+    std::vector<std::vector<int>> a = PMX(p1,p2);
+
+    std::cout << "Child 1: ";
+    for (int i=0;i<9;i++) std::cout << a[0][i] << " "; 
+    std::cout << "\nChild 2: ";
+    for (int i=0;i<9;i++) std::cout << a[1][i] << " "; 
+    std::cout << std::endl;
+
     // std::cout << "Distance matrix:" << std::endl;
     // distance_matrix.print();
     // Initialize the solution
-    Solution solution(instance.getnClients(), instance.getTruck_N(), instance.getTrailer_N(), instance.gettruck_c(), instance.gettrailer_c(), instance.getTruck_comp_c(), instance.getTrailer_comp_c(), instance.getnLoads());
-    std::cout << "Size of solution:" << solution.getSolution().size() + solution.getCapacity().size() << std::endl;
-    std::cout << "Percentage of x:" << float(solution.getx().size())/float(solution.getSolution().size()) << std::endl;
-    std::cout << "Percentage of y:" << float(solution.gety().size())/float(solution.getSolution().size()) << std::endl;
-    std::cout << "Percentage of U:" << float(solution.getU().size())/float(solution.getSolution().size()) << std::endl;
-    std::cout << "Percentage of V:" << float(solution.getV().size())/float(solution.getSolution().size()) << std::endl;
-    std::cout << "Size of capacity:" << solution.getCapacity().size() << std::endl;
-    std::cout << "Percentage of ZT:" << float(solution.getZT().size())/float(solution.getCapacity().size()) << std::endl;
-    std::cout << "Percentage of ZL:" << float(solution.getZL().size())/float(solution.getCapacity().size()) << std::endl;
+    // Solution solution(instance.getnClients(), instance.getTruck_N(), instance.getTrailer_N(), instance.gettruck_c(), instance.gettrailer_c(), instance.getTruck_comp_c(), instance.getTrailer_comp_c(), instance.getnLoads());
+    // std::cout << "Size of solution:" << solution.getSolution().size() + solution.getCapacity().size() << std::endl;
+    // std::cout << "Percentage of x:" << float(solution.getx().size())/float(solution.getSolution().size()) << std::endl;
+    // std::cout << "Percentage of y:" << float(solution.gety().size())/float(solution.getSolution().size()) << std::endl;
+    // std::cout << "Percentage of U:" << float(solution.getU().size())/float(solution.getSolution().size()) << std::endl;
+    // std::cout << "Percentage of V:" << float(solution.getV().size())/float(solution.getSolution().size()) << std::endl;
+    // std::cout << "Size of capacity:" << solution.getCapacity().size() << std::endl;
+    // std::cout << "Percentage of ZT:" << float(solution.getZT().size())/float(solution.getCapacity().size()) << std::endl;
+    // std::cout << "Percentage of ZL:" << float(solution.getZL().size())/float(solution.getCapacity().size()) << std::endl;
     return 0;
 }
