@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <ctime>
 #include <random>
+using namespace std;
+
 
 // RNG setting
 std::mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
@@ -48,8 +50,7 @@ class Instance {
         int nClients;
         int nLoads;
         Client depot;
-        std::vector<Client> vc_clients;
-        std::vector<Client> tc_clients;
+        std::vector<Client> clients;
     public:
         Instance(std::string filename,int mode = 0) {
             std::ifstream file(filename);
@@ -99,11 +100,7 @@ class Instance {
                         ss >> id >> x >> y >> d >> type;
                         demand.push_back(d);
                     }
-                    if(type == 0){
-                        vc_clients.push_back(Client(id, type, x, y, demand));
-                    }else{
-                        tc_clients.push_back(Client(id, type, x, y, demand));
-                    }
+                    clients.push_back(Client(id, type, x, y, demand));
                 }
             }
             
@@ -117,19 +114,7 @@ class Instance {
             std::cout << "Max number of trucks: " << truck_N << std::endl;
             std::cout << "Max number of trailers: " << trailer_N << std::endl;
             std::cout << "VC clients:" << std::endl;
-            for (Client client : vc_clients) {
-                std::cout << "Client ID: " << client.getId() << std::endl;
-                std::cout << "Client type: " << (int)client.getType() << std::endl;
-                std::cout << "Client x: " << client.getX() << std::endl;
-                std::cout << "Client y: " << client.getY() << std::endl;
-                std::cout << "Client demand: ";
-                for (float d : client.getDemand()) {
-                    std::cout << d << " ";
-                }
-                std::cout << "\n" << std::endl;
-            }
-            std::cout << "TC clients:" << std::endl;
-            for (Client client : tc_clients) {
+            for (Client client : clients) {
                 std::cout << "Client ID: " << client.getId() << std::endl;
                 std::cout << "Client type: " << (int)client.getType() << std::endl;
                 std::cout << "Client x: " << client.getX() << std::endl;
@@ -142,8 +127,23 @@ class Instance {
             }
         }
         Client getDepot() { return depot; };
-        std::vector<Client> getVc_clients() { return vc_clients; };
-        std::vector<Client> getTc_clients() { return tc_clients; };
+        std::vector<Client> getVc_clients() {
+            vector<Client> vc_clients;
+            for(Client client: clients){
+                if(client.getType()==0){
+                    vc_clients.push_back(client);
+                }
+            }
+            return vc_clients;
+        };
+        std::vector<Client> getTc_clients() {
+            vector<Client> tc_clients;
+            for(Client client: clients){
+                if(client.getType()==1){
+                    tc_clients.push_back(client);
+                }
+            }
+            return tc_clients;};
         int getnClients() {return nClients;};
         int getTruck_N() { return truck_N; };
         int getTrailer_N() { return trailer_N; };
@@ -158,10 +158,7 @@ class Instance {
             float demand;
             for(i=0;i<nLoads;i++){
                 demand = 0;
-                for(Client client: vc_clients){
-                    demand+= client.getDemand()[i];
-                }
-                for(Client client: tc_clients){
+                for(Client client: clients){
                     demand+= client.getDemand()[i];
                 }
                 allDemand.push_back(demand);
@@ -241,85 +238,21 @@ Matrix distanceMatrix(Instance instance) {
 // Probably the solution encoding class
 class Solution {
     private:
-        std::vector<int> solution;
-        std::vector<float> capacity;
-        int nCompTruck;
-        int nCompTrailer;
-        int nEjes;
-        int nTruck;
-        int nTrailer;
-        int nClients;
-        int nLoads;
+        std::vector<vector<int>> routes;
     public:
-        Solution(std::vector<int> solution) : solution(std::move(solution)) {};
-        Solution(int nClients, int nTruck, int nTrailer, float truck_c, float trailer_c, float truck_comp_c, float trailer_comp_c, int nLoads){
-            int nCompTruck = int(truck_c / truck_comp_c);
-            int nCompTrailer = int(trailer_c / trailer_comp_c);
-            int nEjes = (nClients+1)*(nClients+1);
-
-            // This is a cromosome with the following structure:
-            // [x_{ij}^{kr}] + [y_{ij}^{klv}] + [U] + [V]
-            solution.resize((nEjes*nTruck*nTrailer)+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients)+(nCompTrailer*nTrailer*nLoads*nClients));
-            // [ZT] + [ZL]
-            capacity.resize((nCompTruck*nTruck*nLoads*nClients)+(nCompTrailer*nTrailer*nLoads*nClients));
-            this->nCompTruck = nCompTruck;
-            this->nCompTrailer = nCompTrailer;
-            this->nEjes = nEjes;
-            this->nTruck = nTruck;
-            this->nTrailer = nTrailer;
-            this->nClients = nClients;
-            this->nLoads = nLoads;
-        };
-        Solution() {};
-        std::vector<int> getSolution() { return solution; };
-        std::vector<int> getx() {
-            std::vector<int> x;
-            for (int i = 0; i < nEjes*nTruck*nTrailer; i++) {
-                x.push_back(solution[i]);
-            }
-            return x;
+        Solution(){};
+        void addRoute(vector<int> route) {
+            routes.push_back(route);
         }
-        std::vector<int> gety() {
-            std::vector<int> y;
-            for (int i = nEjes*nTruck*nTrailer; i < nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1)); i++) {
-                y.push_back(solution[i]);
+        vector<vector<int>> getRoutes(){return routes;};
+        void print(){
+            int i = 0;
+            for(vector<int> route:routes){
+                i++;
+                cout << "Route " << i << ": ";
+                for(int elem: route) cout << elem << " ";
+                cout << endl;
             }
-            return y;
-        }
-        std::vector<int> getU() {
-            std::vector<int> U;
-            for (int i = nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1)); i < nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients); i++) {
-                U.push_back(solution[i]);
-            }
-            return U;
-        }
-        std::vector<int> getV() {
-            std::vector<int> V;
-            for (int i = nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients); i < nEjes*nTruck*nTrailer+(nEjes*nTruck*(nClients+1))+(nCompTruck*nTruck*nLoads*nClients)+(nCompTrailer*nTrailer*nLoads*nClients); i++) {
-                V.push_back(solution[i]);
-            }
-            return V;
-        }        
-        std::vector<float> getCapacity() { return capacity; };
-        std::vector<float> getZT() {
-            std::vector<float> ZT;
-            for (int i = 0; i < nCompTruck*nTruck*nLoads*nClients; i++) {
-                ZT.push_back(capacity[i]);
-            }
-            return ZT;
-        }
-        std::vector<float> getZL() {
-            std::vector<float> ZL;
-            for (int i = nCompTruck*nTruck*nLoads*nClients; i < nCompTruck*nTruck*nLoads*nClients+(nCompTrailer*nTrailer*nLoads*nClients); i++) {
-                ZL.push_back(capacity[i]);
-            }
-            return ZL;
-        }
-        void print() {
-            for (int i : solution) {
-                std::cout << i << " ";
-            }
-            std::cout << std::endl;
         }
 };
 
@@ -336,7 +269,7 @@ std::vector<std::vector<int>> PMX (std::vector<int> &parent1, std::vector<int>& 
     int end = dist(rng);
     if (start > end) std::swap(start, end);
 
-    std::cout << "Start: " << start << "; End: " << end << std::endl;
+    // std::cout << "Start: " << start << "; End: " << end << std::endl;
 
     // Step 1: Copy crossover segment
     for (int i = start; i <= end; ++i) {
@@ -359,7 +292,7 @@ std::vector<std::vector<int>> PMX (std::vector<int> &parent1, std::vector<int>& 
                 auto it = std::find(segment.begin(), segment.end(), gene);
                 int index = static_cast<int>(std::distance(segment.begin(), it));
                 gene = mappedSegment[index];
-                std::cout << "Start: " << start << "; End: " << end << std::endl;
+                // std::cout << "Start: " << start << "; End: " << end << std::endl;
             }
             child[i] = gene;
         }
@@ -375,6 +308,114 @@ std::vector<std::vector<int>> PMX (std::vector<int> &parent1, std::vector<int>& 
 
     return {child1, child2};
 }
+
+// GVR Crossover
+Solution GVRX(Solution parent1, Solution parent2, Matrix costMatrix){
+    int nRoutes2 = parent2.getRoutes().size();
+    Solution child;
+    // Random number generation setup    
+    std::uniform_int_distribution<int> dist1(0, nRoutes2-1);
+
+    // Select the sub-route to be changed
+    int n = dist1(rng);
+    vector<int> route = parent2.getRoutes()[n];
+    int size = route.size();
+    uniform_int_distribution<int> dist2(0,route.size()-1);
+    int m = dist2(rng);
+    vector<int> subroute;
+    vector<int> modRoute;
+
+    for (int i = m;i<size;i++){
+        subroute.push_back(route[i]);
+    }
+
+    cout << "The subroute is: ";
+    for(int elem:subroute) cout << elem << " ";
+    cout << endl;
+
+    float min = 100000000.;
+    int i=0,elem_route,element;
+    //Select the closest client to the first client of the sub-route
+    for(vector<int> route: parent1.getRoutes()){
+        for(int elem: route){
+            cout << "Cost from s_0 to " << elem << ": " << costMatrix.at(subroute[0],elem) << endl;
+            if (costMatrix.at(subroute[0],elem)<min && find(subroute.begin(),subroute.end(),elem) == subroute.end()){
+                min = costMatrix.at(subroute[0],elem);
+                element = elem;
+                elem_route = i;
+            }
+        }
+        i++;
+    }
+    cout << "The min is: " << min << endl;
+    cout << "The min is get at: " << element << endl;
+    cout << "In the route: " << elem_route << endl;
+
+    auto begin = subroute.begin(),end = subroute.end();
+    for (vector<int> route: parent1.getRoutes()){
+        vector<int> new_route;
+        for (int elem: route){
+            if (find(begin,end,elem) == end){
+                new_route.push_back(elem);
+            }
+        }
+        if (!new_route.empty()){ 
+            if (find(new_route.begin(),new_route.end(),element) != new_route.end()){
+                new_route.insert(find(new_route.begin(),new_route.end(),element)+1,subroute.begin(),subroute.end());
+            }
+            child.addRoute(new_route);            
+        }
+    }
+
+
+    
+    // auto pos = find(parent1.getRoutes()[elem_route].begin(),parent1.getRoutes()[elem_route].end(),element)+1;
+    // parent1.getRoutes()[elem_route].insert(find(parent1.getRoutes()[elem_route].begin(),parent1.getRoutes()[elem_route].end(),element)+1,subroute.begin(),subroute.end());
+    // cout << "hola"<< endl;
+    // for (int elem:parent1.getRoutes()[elem_route]) cout << elem << " ";
+    // cout << endl;
+
+    // cout << std::distance(parent1.getRoutes()[elem_route].begin(),pos) << endl;
+    // // parent1.getRoutes()[elem_route].insert(find(parent1.getRoutes()[elem_route].begin(),parent1.getRoutes()[elem_route].end(),min)+1,subroute.begin(),subroute.end());
+
+    // // for(int elem:modRoute) cout << elem << " ";
+    // // cout << endl;
+
+    // // Fix the other routes, by removing the elements from the vector
+    // i=0;
+    // auto begin = subroute.begin(),end = subroute.end();
+    // for (vector<int> route: parent1.getRoutes()){
+    //     vector<int> new_route;
+    //     for (int j=0;j<int(route.size());j++){
+    //         if (find(begin,end,route[j]) == end){
+    //             new_route.push_back(route[j]);
+    //         }else if (i==elem_route){
+
+    //         }
+    //     }
+    //     if (!new_route.empty()) child.addRoute(new_route);
+    //     i++;
+    // }
+
+
+
+    return child;
+}
+
+Matrix randomSymMatrix(int size){
+    Matrix mat(size+1,size+1);
+    uniform_real_distribution<float> dist(10.,30.);
+
+    for(int i=0;i<size+1;i++){
+        for(int j=0;j<i;j++){
+            // if (j==i) mat.at(i,j) = 0;
+            mat.at(i,j) = dist(rng);
+            mat.at(j,i) = mat.at(i,j);
+        }
+    }
+    return mat;
+}
+
 
 int main(int argc, char* argv[]) {
     // Initialize the instance
@@ -409,17 +450,21 @@ int main(int argc, char* argv[]) {
     for (int i=0;i<9;i++) std::cout << a[1][i] << " "; 
     std::cout << std::endl;
 
-    // std::cout << "Distance matrix:" << std::endl;
-    // distance_matrix.print();
-    // Initialize the solution
-    // Solution solution(instance.getnClients(), instance.getTruck_N(), instance.getTrailer_N(), instance.gettruck_c(), instance.gettrailer_c(), instance.getTruck_comp_c(), instance.getTrailer_comp_c(), instance.getnLoads());
-    // std::cout << "Size of solution:" << solution.getSolution().size() + solution.getCapacity().size() << std::endl;
-    // std::cout << "Percentage of x:" << float(solution.getx().size())/float(solution.getSolution().size()) << std::endl;
-    // std::cout << "Percentage of y:" << float(solution.gety().size())/float(solution.getSolution().size()) << std::endl;
-    // std::cout << "Percentage of U:" << float(solution.getU().size())/float(solution.getSolution().size()) << std::endl;
-    // std::cout << "Percentage of V:" << float(solution.getV().size())/float(solution.getSolution().size()) << std::endl;
-    // std::cout << "Size of capacity:" << solution.getCapacity().size() << std::endl;
-    // std::cout << "Percentage of ZT:" << float(solution.getZT().size())/float(solution.getCapacity().size()) << std::endl;
-    // std::cout << "Percentage of ZL:" << float(solution.getZL().size())/float(solution.getCapacity().size()) << std::endl;
+    // GVR Crossover
+    Solution sol1,sol2;
+
+    sol1.addRoute({1,2,3});
+    sol1.addRoute({4,5});
+    sol1.addRoute({6,7,8});
+    cout << "test" << endl;
+    sol2.addRoute({1,8});
+    sol2.addRoute({3,4,5,2});
+    sol2.addRoute({6,7});
+
+    Matrix mat = randomSymMatrix(8);
+
+    Solution child = GVRX(sol1,sol2,mat);
+
+    child.print();
     return 0;
 }
