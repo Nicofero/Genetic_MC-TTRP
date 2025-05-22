@@ -144,6 +144,7 @@ class Instance {
                 }
             }
             return tc_clients;};
+        vector<Client> getClients(){return clients;};
         int getnClients() {return nClients;};
         int getTruck_N() { return truck_N; };
         int getTrailer_N() { return trailer_N; };
@@ -244,7 +245,7 @@ class Solution {
         void addRoute(vector<int> route) {
             routes.push_back(route);
         }
-        vector<vector<int>> getRoutes(){return routes;};
+        vector<vector<int>> &getRoutes(){return routes;};
         void print(){
             int i = 0;
             for(vector<int> route:routes){
@@ -310,7 +311,7 @@ std::vector<std::vector<int>> PMX (std::vector<int> &parent1, std::vector<int>& 
 }
 
 // GVR Crossover
-Solution GVRX(Solution parent1, Solution parent2, Matrix costMatrix){
+Solution GVRX(Solution &parent1, Solution &parent2, Matrix &costMatrix){
     int nRoutes2 = parent2.getRoutes().size();
     Solution child;
     // Random number generation setup    
@@ -351,6 +352,7 @@ Solution GVRX(Solution parent1, Solution parent2, Matrix costMatrix){
     cout << "The min is get at: " << element << endl;
     cout << "In the route: " << elem_route << endl;
 
+    // Elimination of duplicates and insertion of the new subroute
     auto begin = subroute.begin(),end = subroute.end();
     for (vector<int> route: parent1.getRoutes()){
         vector<int> new_route;
@@ -366,42 +368,82 @@ Solution GVRX(Solution parent1, Solution parent2, Matrix costMatrix){
             child.addRoute(new_route);            
         }
     }
-
-
-    
-    // auto pos = find(parent1.getRoutes()[elem_route].begin(),parent1.getRoutes()[elem_route].end(),element)+1;
-    // parent1.getRoutes()[elem_route].insert(find(parent1.getRoutes()[elem_route].begin(),parent1.getRoutes()[elem_route].end(),element)+1,subroute.begin(),subroute.end());
-    // cout << "hola"<< endl;
-    // for (int elem:parent1.getRoutes()[elem_route]) cout << elem << " ";
-    // cout << endl;
-
-    // cout << std::distance(parent1.getRoutes()[elem_route].begin(),pos) << endl;
-    // // parent1.getRoutes()[elem_route].insert(find(parent1.getRoutes()[elem_route].begin(),parent1.getRoutes()[elem_route].end(),min)+1,subroute.begin(),subroute.end());
-
-    // // for(int elem:modRoute) cout << elem << " ";
-    // // cout << endl;
-
-    // // Fix the other routes, by removing the elements from the vector
-    // i=0;
-    // auto begin = subroute.begin(),end = subroute.end();
-    // for (vector<int> route: parent1.getRoutes()){
-    //     vector<int> new_route;
-    //     for (int j=0;j<int(route.size());j++){
-    //         if (find(begin,end,route[j]) == end){
-    //             new_route.push_back(route[j]);
-    //         }else if (i==elem_route){
-
-    //         }
-    //     }
-    //     if (!new_route.empty()) child.addRoute(new_route);
-    //     i++;
-    // }
-
-
-
     return child;
 }
 
+// Function to generate a random inversion mutation
+void inversionMutation(Solution &route) {
+    int nRoutes = route.getRoutes().size();
+
+    // Random number generation setup    
+    std::uniform_int_distribution<int> dist1(0, nRoutes-1);
+
+    // Select the sub-route to be changed
+    int n = dist1(rng);
+    vector<int>& rt = route.getRoutes()[n];
+    int size = rt.size();
+    uniform_int_distribution<int> dist2(0,rt.size()-1);
+    int m = dist2(rng);
+
+    vector<int> subroute;
+
+    // Get the subroute to be inverted
+    for (int i = m;i<size;i++){
+        subroute.push_back(rt[i]);
+    }
+    cout << "The subroute is: ";
+    for (int elem: subroute) cout << elem << " ";
+    cout << endl;
+
+    // Inversion and reinsertion of the subroute
+    reverse(subroute.begin(),subroute.end());
+    rt.resize(m);
+    rt.insert(rt.end(),subroute.begin(),subroute.end());
+}
+
+float objectiveFunction (Solution &sol, Instance &probl, Matrix &costMatrix){
+    float cost = 0.;
+    int i,rtype,parking;
+    for(vector<int> route: sol.getRoutes()){
+        cost+=costMatrix.at(0,route[0]);
+        parking = 0;
+        rtype = probl.getClients()[route[0]-1].getType();
+        // cout << "Añadimos el coste entre el deposito y el cliente " << route[0] << endl;
+        for(i=1;i<int(route.size());i++){            
+            if (probl.getClients()[route[i]-1].getType() == 1 && rtype == 0 && parking == 0){
+                parking = route[i-1];
+                // cout << "Entramos en una subruta" << endl;
+            }
+            if (parking == 0){
+                cost+= costMatrix.at(route[i-1],route[i]);
+                // cout << "Añadimos el coste entre el cliente " << route[i-1] << " y el cliente " << route[i] << endl;
+            } else{
+                if (probl.getClients()[route[i]-1].getType() == 0 && rtype == 0){
+                    cost+= costMatrix.at(parking,route[i-1]);
+                    // cout << "Volvemos al parking " << parking << " desde el cliente " << route[i-1] << endl;
+                    cost+= costMatrix.at(parking,route[i]);
+                    // cout << "Se acabo la subruta, añadimos el coste entre el cliente " << parking << " y el cliente " << route[i] << endl;
+                    parking = 0;
+                }else{
+                    cost+= costMatrix.at(route[i-1],route[i]);
+                    // cout << "Añadimos el coste entre el cliente " << route[i-1] << " y el cliente " << route[i] << " en la subruta con parking " << parking << endl;
+                }
+            }
+        }
+        if (parking != 0){
+            cost+= costMatrix.at(parking,route.back());
+            // cout << "Volvemos al parking " << parking << " desde el cliente " << route.back() << endl;
+            // cout << "Volvemos al deposito desde el cliente " << parking << endl;
+            cost+=costMatrix.at(0,parking);
+        }else{
+            // cout << "Volvemos al deposito desde el cliente " << route.back() << endl;
+            cost+=costMatrix.at(0,route.back());
+        }
+    }
+    return cost;
+}
+
+// Function to generate a random symmetric matrix
 Matrix randomSymMatrix(int size){
     Matrix mat(size+1,size+1);
     uniform_real_distribution<float> dist(10.,30.);
@@ -439,16 +481,16 @@ int main(int argc, char* argv[]) {
     std::cout << instance.getAllDemand()[0] << std::endl;
     std::cout << "Needed trucks: " << instance.getAllDemand()[0]/instance.gettruck_c() << std::endl;
 
-    std::vector<int> p1 = {1,6,3,4,5,2,9,7,8};
-    std::vector<int> p2 = {4,3,1,2,6,5,8,9,7};
+    // std::vector<int> p1 = {1,6,3,4,5,2,9,7,8};
+    // std::vector<int> p2 = {4,3,1,2,6,5,8,9,7};
 
-    std::vector<std::vector<int>> a = PMX(p1,p2);
+    // std::vector<std::vector<int>> a = PMX(p1,p2);
 
-    std::cout << "Child 1: ";
-    for (int i=0;i<9;i++) std::cout << a[0][i] << " "; 
-    std::cout << "\nChild 2: ";
-    for (int i=0;i<9;i++) std::cout << a[1][i] << " "; 
-    std::cout << std::endl;
+    // std::cout << "Child 1: ";
+    // for (int i=0;i<9;i++) std::cout << a[0][i] << " "; 
+    // std::cout << "\nChild 2: ";
+    // for (int i=0;i<9;i++) std::cout << a[1][i] << " "; 
+    // std::cout << std::endl;
 
     // GVR Crossover
     Solution sol1,sol2;
@@ -463,8 +505,19 @@ int main(int argc, char* argv[]) {
 
     Matrix mat = randomSymMatrix(8);
 
-    Solution child = GVRX(sol1,sol2,mat);
+    Solution child = GVRX(sol1,sol2,distance_matrix);
 
     child.print();
+
+    inversionMutation(child);
+
+    distance_matrix.print();
+
+    child.print();
+
+    float cost = objectiveFunction(child,instance,distance_matrix);
+
+    cout << "The cost of the trip is: " << cost << endl;
+
     return 0;
 }
