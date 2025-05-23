@@ -197,6 +197,7 @@ float distance(Client a, Client b) {
     return std::sqrt(pow(a.getX() - b.getX(), 2) + pow(a.getY() - b.getY(), 2));
 }
 
+
 Matrix distanceMatrix(Instance instance) {
     int n = instance.getnClients();
     Matrix dist(n+1, n+1);
@@ -246,6 +247,19 @@ class Solution {
             routes.push_back(route);
         }
         vector<vector<int>> &getRoutes(){return routes;};
+        vector<int> findElement(int elem){
+            vector<int> pos(2);
+            for (int i=0;i<int(routes.size());i++){
+                for(int j=0;j<int(routes[i].size());j++){
+                    if(routes[i][j] == elem){
+                        pos[0] = i;
+                        pos[1] = j;
+                        return pos;
+                    }
+                }
+            }
+            return pos;
+        };
         void print(){
             int i = 0;
             for(vector<int> route:routes){
@@ -382,25 +396,17 @@ void inversionMutation(Solution &route) {
     int n = dist1(rng);
     vector<int>& rt = route.getRoutes()[n];
     int size = rt.size();
-    uniform_int_distribution<int> dist2(0,rt.size()-1);
+    if (size>1) size--;
+    uniform_int_distribution<int> dist2(0,size-1);
     int m = dist2(rng);
 
-    vector<int> subroute;
+    cout << "Reverse the route " << n << " from the position " << m << endl;
 
-    // Get the subroute to be inverted
-    for (int i = m;i<size;i++){
-        subroute.push_back(rt[i]);
-    }
-    cout << "The subroute is: ";
-    for (int elem: subroute) cout << elem << " ";
-    cout << endl;
-
-    // Inversion and reinsertion of the subroute
-    reverse(subroute.begin(),subroute.end());
-    rt.resize(m);
-    rt.insert(rt.end(),subroute.begin(),subroute.end());
+    reverse(rt.begin()+m,rt.end());
 }
 
+
+// Objective function: Maybe for the subtours check if the next node after a VC is a TC and add that to the subtour instead 
 float objectiveFunction (Solution &sol, Instance &probl, Matrix &costMatrix){
     float cost = 0.;
     int i,rtype,parking;
@@ -459,6 +465,57 @@ Matrix randomSymMatrix(int size){
 }
 
 
+/*      LOCAL SEARCH METHODS
+* The local search methods will be:
+*   - Relocate
+*   - 2-OPT   - 
+*   - Maybe some method for the subtours
+*/
+
+// Relocation local search
+
+// Relocate atomic function (called by the local search if a better move is found)
+void relocate (Solution &sol,int element, int route, int position){
+
+    vector<int> pos = sol.findElement(element);
+
+    sol.getRoutes()[pos[0]].erase(sol.getRoutes()[pos[0]].begin()+pos[1]);
+    if (sol.getRoutes()[pos[0]].empty()){        
+        sol.getRoutes().erase(sol.getRoutes().begin()+pos[0]);
+    }
+    sol.getRoutes()[route].insert(sol.getRoutes()[route].begin()+position,element);
+}
+
+// 2-OPT Local search
+void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix){
+    vector<int> &route = sol.getRoutes()[pos];
+    vector<int> best_route;
+    float new_distance;
+    float best_distance = objectiveFunction(sol,probl,costMatrix);
+    bool end = true;
+    do{
+        for(int i=0;i<int(route.size()-1) && end;i++){
+            for(int j=i;j<int(route.size()) && end;j++){
+                opt2(route,i,j);
+                new_distance = objectiveFunction(sol,probl,costMatrix);
+                if (new_distance < best_distance){
+                    best_route = route;
+                    best_distance = new_distance;
+                    end == false;
+                }
+            }
+        }
+    }while (!end);
+        
+}
+
+// 2-OPT atomic function
+void opt2 (vector<int> &route,int edge1,int edge2){
+    if (edge1 >= 0 && edge2 < route.size() && edge1 < edge2) {
+        reverse(route.begin() + edge1, route.begin() + edge2 + 1);
+    }
+}
+
 int main(int argc, char* argv[]) {
     // Initialize the instance
     if (argc < 2) {
@@ -507,17 +564,23 @@ int main(int argc, char* argv[]) {
 
     Solution child = GVRX(sol1,sol2,distance_matrix);
 
+    cout << "Child after crossover:" << endl;
     child.print();
 
     inversionMutation(child);
 
-    distance_matrix.print();
-
+    // distance_matrix.print();
+    cout << "Child after mutation:" << endl;
     child.print();
 
     float cost = objectiveFunction(child,instance,distance_matrix);
 
     cout << "The cost of the trip is: " << cost << endl;
+
+    relocate(child,4,0,0);
+
+    cout << "Child after relocation:" << endl;
+    child.print();
 
     return 0;
 }
