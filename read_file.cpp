@@ -493,28 +493,106 @@ void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix){
     float new_distance;
     float best_distance = objectiveFunction(sol,probl,costMatrix);
     bool end = true;
-    do{
-        for(int i=0;i<int(route.size()-1) && end;i++){
-            for(int j=i;j<int(route.size()) && end;j++){
-                opt2(route,i,j);
-                new_distance = objectiveFunction(sol,probl,costMatrix);
-                if (new_distance < best_distance){
-                    best_route = route;
-                    best_distance = new_distance;
-                    end == false;
+
+    // Only if route to be changed is more than one element
+    if (route.size()>1){
+        do{
+            for(int i=1;i<int(route.size()-1) && end;i++){
+                for(int j=i;j<int(route.size()) && end;j++){
+                    opt2(route,i,j);
+                    new_distance = objectiveFunction(sol,probl,costMatrix);
+                    if (new_distance < best_distance){
+                        best_route = route;
+                        best_distance = new_distance;
+                        end == false;
+                    }
                 }
             }
-        }
-    }while (!end);
-        
+        }while (!end);
+    }
 }
 
 // 2-OPT atomic function
 void opt2 (vector<int> &route,int edge1,int edge2){
-    if (edge1 >= 0 && edge2 < route.size() && edge1 < edge2) {
+    if (edge1 >= 1 && edge2 < route.size() && edge1 < edge2) {
         reverse(route.begin() + edge1, route.begin() + edge2 + 1);
     }
 }
+
+// Something to change type of route
+void routeOpt (){
+    // TODO
+}
+
+
+// I dont like this code
+// Tournament selection (4 participants)
+int tournamentSelection(vector<Solution> &candidates,Instance &probl, Matrix &costMatrix){
+    int lb,win;
+    float c0,c1,c2,c3;
+    c0 = objectiveFunction(candidates[0],probl,costMatrix);
+    c1 = objectiveFunction(candidates[1],probl,costMatrix);
+    c2 = objectiveFunction(candidates[2],probl,costMatrix);
+    c3 = objectiveFunction(candidates[3],probl,costMatrix);
+
+    // Left bracket
+    if(c0 < c1){
+        lb= 0;
+    }else lb=1;
+
+    if(c2 < c3){
+        switch (lb){
+            case 0:
+                if (c0 < c2) win = 0;
+                else win =2;
+                break;
+            case 1:
+                if (c1 < c2) win = 1;
+                else win =2;
+                break;
+        }
+    }else{
+        switch (lb){
+            case 0:
+                if (c0 < c3) win = 0;
+                else win =3;
+                break;
+            case 1:
+                if (c1 < c3) win = 1;
+                else win =3;
+                break;
+        }
+    }
+    return win;
+}
+
+std::vector<int> generate_random_permutation(int size) {
+    std::vector<int> vec(size);
+    for (int i = 0; i < size; ++i) {
+        vec[i] = i + 1;
+    }
+    std::shuffle(vec.begin(), vec.end(), rng);
+    return vec;
+}
+
+vector<Solution> randomPopulation (int size, int length){
+    vector<Solution> pop;
+    vector<vector<int>> seeds;
+
+    for(int i=0; i<size;i++){
+        seeds.push_back(generate_random_permutation(length));
+    }
+
+    return pop;
+}
+
+
+Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix){
+    Solution best_sol;
+    vector<Solution> pop = randomPopulation(size,probl.getnClients());
+    
+}
+
 
 int main(int argc, char* argv[]) {
     // Initialize the instance
