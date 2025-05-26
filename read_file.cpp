@@ -11,6 +11,16 @@
 #include <random>
 using namespace std;
 
+//Regular text
+#define BLK "\e[0;30m"
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YEL "\e[0;33m"
+#define BLU "\e[0;34m"
+#define MAG "\e[0;35m"
+#define CYN "\e[0;36m"
+#define WHT "\e[0;37m"
+
 
 // RNG setting
 std::mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
@@ -197,7 +207,7 @@ float distance(Client a, Client b) {
     return std::sqrt(pow(a.getX() - b.getX(), 2) + pow(a.getY() - b.getY(), 2));
 }
 
-
+// TODO: Change this function
 Matrix distanceMatrix(Instance instance) {
     int n = instance.getnClients();
     Matrix dist(n+1, n+1);
@@ -240,7 +250,7 @@ Matrix distanceMatrix(Instance instance) {
 // Probably the solution encoding class
 class Solution {
     private:
-        std::vector<vector<int>> routes;
+        std::vector<vector<int>> routes;        
     public:
         Solution(){};
         void addRoute(vector<int> route) {
@@ -269,6 +279,7 @@ class Solution {
                 cout << endl;
             }
         }
+        float cost;
 };
 
 // PMX function for the crossover
@@ -329,42 +340,42 @@ Solution GVRX(Solution &parent1, Solution &parent2, Matrix &costMatrix){
     int nRoutes2 = parent2.getRoutes().size();
     Solution child;
     // Random number generation setup    
+    // cout << nRoutes2 << endl;
     std::uniform_int_distribution<int> dist1(0, nRoutes2-1);
-
     // Select the sub-route to be changed
     int n = dist1(rng);
+
     vector<int> route = parent2.getRoutes()[n];
-    int size = route.size();
     uniform_int_distribution<int> dist2(0,route.size()-1);
     int m = dist2(rng);
+    int m2 = dist2(rng);
+    if (m > m2) swap(m,m2);
     vector<int> subroute;
-    vector<int> modRoute;
 
-    for (int i = m;i<size;i++){
+    for (int i = m;i<(m2+1);i++){
         subroute.push_back(route[i]);
     }
 
-    cout << "The subroute is: ";
-    for(int elem:subroute) cout << elem << " ";
-    cout << endl;
+    // cout << "The subroute is: ";
+    // for(int elem:subroute) cout << elem << " ";
+    // cout << endl;
 
     float min = 100000000.;
-    int i=0,elem_route,element;
+    int i=0,element;
     //Select the closest client to the first client of the sub-route
     for(vector<int> route: parent1.getRoutes()){
         for(int elem: route){
-            cout << "Cost from s_0 to " << elem << ": " << costMatrix.at(subroute[0],elem) << endl;
+            // cout << "Cost from s_0 to " << elem << ": " << costMatrix.at(subroute[0],elem) << endl;
             if (costMatrix.at(subroute[0],elem)<min && find(subroute.begin(),subroute.end(),elem) == subroute.end()){
                 min = costMatrix.at(subroute[0],elem);
                 element = elem;
-                elem_route = i;
             }
         }
         i++;
     }
-    cout << "The min is: " << min << endl;
-    cout << "The min is get at: " << element << endl;
-    cout << "In the route: " << elem_route << endl;
+    // cout << "The min is: " << min << endl;
+    // cout << "The min is get at: " << element << endl;
+    // cout << "In the route: " << elem_route << endl;
 
     // Elimination of duplicates and insertion of the new subroute
     auto begin = subroute.begin(),end = subroute.end();
@@ -381,6 +392,16 @@ Solution GVRX(Solution &parent1, Solution &parent2, Matrix &costMatrix){
             }
             child.addRoute(new_route);            
         }
+    }
+    if (child.getRoutes().empty()){
+        cout << "Child empty" << endl;
+        for (int elem:parent1.getRoutes()[0]) cout << elem << " ";
+        cout << endl;
+        for (int elem:parent2.getRoutes()[0]) cout << elem << " ";
+        cout << endl;
+        cout << "Subroute" << endl;
+        for (int elem:subroute) cout << elem << " ";
+        cout << endl;
     }
     return child;
 }
@@ -400,7 +421,7 @@ void inversionMutation(Solution &route) {
     uniform_int_distribution<int> dist2(0,size-1);
     int m = dist2(rng);
 
-    cout << "Reverse the route " << n << " from the position " << m << endl;
+    // cout << "Reverse the route " << n << " from the position " << m << endl;
 
     reverse(rt.begin()+m,rt.end());
 }
@@ -472,8 +493,6 @@ Matrix randomSymMatrix(int size){
 *   - Maybe some method for the subtours
 */
 
-// Relocation local search
-
 // Relocate atomic function (called by the local search if a better move is found)
 void relocate (Solution &sol,int element, int route, int position){
 
@@ -484,6 +503,18 @@ void relocate (Solution &sol,int element, int route, int position){
         sol.getRoutes().erase(sol.getRoutes().begin()+pos[0]);
     }
     sol.getRoutes()[route].insert(sol.getRoutes()[route].begin()+position,element);
+}
+
+// Relocation local search
+void relocationLocal (Solution &sol,int element, int route, int position){
+    //TODO:
+}
+
+// 2-OPT atomic function
+void opt2 (vector<int> &route,int edge1,int edge2){
+    if (edge1 >= 1 && edge2 < int(route.size()) && edge1 < edge2) {
+        reverse(route.begin() + edge1, route.begin() + edge2 + 1);
+    }
 }
 
 // 2-OPT Local search
@@ -504,7 +535,7 @@ void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix){
                     if (new_distance < best_distance){
                         best_route = route;
                         best_distance = new_distance;
-                        end == false;
+                        end = false;
                     }
                 }
             }
@@ -512,20 +543,13 @@ void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix){
     }
 }
 
-// 2-OPT atomic function
-void opt2 (vector<int> &route,int edge1,int edge2){
-    if (edge1 >= 1 && edge2 < route.size() && edge1 < edge2) {
-        reverse(route.begin() + edge1, route.begin() + edge2 + 1);
-    }
-}
-
 // Something to change type of route
 void routeOpt (){
-    // TODO
+    // TODO:
 }
 
 
-// I dont like this code
+// FIXME: I dont like this code
 // Tournament selection (4 participants)
 int tournamentSelection(vector<Solution> &candidates,Instance &probl, Matrix &costMatrix){
     int lb,win;
@@ -575,22 +599,163 @@ std::vector<int> generate_random_permutation(int size) {
     return vec;
 }
 
+// FIXME: Receives a permutation of nodes and returns a Solution forming routes
+Solution ssplit (vector<int> &perm){
+    // To be changed
+    int s = perm.size(), rsize;
+    uniform_int_distribution<int> dist1(0, s-1);    
+    Solution sol;
+    vector<int> route;
+
+    while(s>0){
+        route = vector<int>();
+        rsize = dist1(rng) % s;
+        if(s==1 || rsize==0) rsize = 1;
+        route.insert(route.begin(),perm.begin(),perm.begin()+rsize);
+        perm.erase(perm.begin(),perm.begin()+rsize);
+        s-=rsize;
+        sol.getRoutes().push_back(route);
+    }
+    return sol;
+
+}
+
+// Generates a random population with length nodes and size number of individuals 
 vector<Solution> randomPopulation (int size, int length){
     vector<Solution> pop;
     vector<vector<int>> seeds;
+    Solution aux;
 
+    // Generate random permutations
     for(int i=0; i<size;i++){
         seeds.push_back(generate_random_permutation(length));
+    }
+
+    // Divide the individuals into random routes. FIXME: setup this as the s-split function
+    for(int i=0; i<size;i++){
+        pop.push_back(ssplit(seeds[i]));
     }
 
     return pop;
 }
 
-
-Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix){
-    Solution best_sol;
-    vector<Solution> pop = randomPopulation(size,probl.getnClients());
+void selectParents(int &p1, int &p2, Instance &probl, Matrix &costMatrix, vector<Solution> &pop){
+    vector<Solution> tournament(4);
+    uniform_int_distribution<int> dist(0,pop.size()-1);
     
+    for(int j=0;j<4;j++){
+        tournament[j] = pop[dist(rng)];
+    }    
+    p1 = tournamentSelection(tournament,probl,costMatrix);
+    
+    tournament = vector<Solution>(4);
+    
+    for(int j=0;j<4;j++){
+        tournament[j] = pop[dist(rng)];
+    }
+    p2 = tournamentSelection(tournament,probl,costMatrix);
+}
+
+
+Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=10000,float pc=0.8, float pm=0.4, float pls=0.3){
+    Solution best_sol;
+    float best_cost;
+    if (size < 4){
+        cout << RED << "The population size must be bigger than 4" << WHT << endl;
+        return best_sol;
+    }
+    vector<Solution> pop = randomPopulation(size,probl.getnClients()), ext_pop, tournament(4);
+    Solution child;
+    int alpha=0, beta=0, maxiternor, nParents, i, p1, p2;
+    uniform_int_distribution<int> dist(0,size-1);
+    uniform_real_distribution<float> distfloat(0,1);
+
+    // Assign costs for the population
+    for(Solution& elem:pop){
+        elem.cost = objectiveFunction(elem,probl,costMatrix);
+    }
+
+    std::sort(pop.begin(), pop.end(), [](const Solution& a, const Solution& b) {
+        return a.cost < b.cost;
+    });
+    best_cost = pop[0].cost;
+    best_sol = pop[0];
+
+    cout << "New best solution: " << best_cost << endl;
+    best_sol.print();
+
+    if (maxiter > 5000) maxiternor = maxiter/100;
+    else maxiternor = 50;
+    // for(int i=0;i<int(pop.size());i++){
+    //     cout << "Child " << i << endl;
+    //     pop[i].print();
+    // }
+
+    while(alpha < maxiter && beta < maxiternor){
+        ext_pop = pop;
+        cout << "New pop done" << endl;
+        // Selection and crossover
+        nParents = ceil(pc*size)/2;
+        // cout << nParents << endl;
+        i = 0;
+        cout << "----> Iteration " << alpha << endl;
+        while(i<nParents){
+            selectParents(p1,p2,probl,costMatrix,pop);
+            child = GVRX(pop[p1],pop[p2],costMatrix);
+            // You can add here a function that checks variety in the population
+            if(!child.getRoutes().empty()){
+                child.cost = objectiveFunction(child,probl,costMatrix);
+                ext_pop.push_back(child);
+                i++;
+            }
+            // cout << "New child" << endl;
+        }
+        cout << "Crossover done" << endl;
+
+        // Mutation and local search
+        for(Solution &s: pop){
+            if (distfloat(rng)<pm){
+                inversionMutation(s);
+                s.cost = objectiveFunction(s,probl,costMatrix);
+                ext_pop.push_back(s);
+            }
+            // if (distfloat(rng)<pls){
+            //     opt2Local(s,0,probl,costMatrix);
+            //     s.cost = objectiveFunction(s,probl,costMatrix);
+            //     ext_pop.push_back(s);
+            // }
+        }
+        cout << "Mutation done" << endl;
+
+        // Minima update
+
+        // Sort the extended population
+        std::sort(ext_pop.begin(), ext_pop.end(), [](const Solution& a, const Solution& b) {
+            return a.cost < b.cost;
+        });
+        cout << "Sort done" << endl;
+
+        pop.assign(ext_pop.begin(),ext_pop.begin()+size);
+        
+        cout << "New pop done" << endl;
+
+        if (pop[0].cost < best_cost){
+            best_cost = pop[0].cost;
+            best_sol = pop[0];
+            beta = 0;
+            cout << "Best cost updated" << endl;
+        }else{
+            beta++;
+        }
+
+        cout << "Best cost: " << best_cost << endl;
+
+        cout << "Update done" << endl;
+
+        alpha++;
+    }
+
+    return best_sol;
 }
 
 
@@ -659,6 +824,12 @@ int main(int argc, char* argv[]) {
 
     cout << "Child after relocation:" << endl;
     child.print();
+
+    Solution best_route = memeticLoop(10,instance,distance_matrix);
+
+    cout << "\nThe best solution found is:" << endl;
+    best_route.print();
+    cout << "The cost of this solution is: " << objectiveFunction(best_route,instance,distance_matrix) << endl;
 
     return 0;
 }

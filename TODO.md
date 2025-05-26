@@ -6,12 +6,14 @@
 - [] Define all the local search functions:
     - [x] 2-OPT
     - [] Relocate
-- [] Create the tournament selection method
+- [x] Create the tournament selection method
 - [] Create the basic genetic skeleton
-- [] Generate random initial population
+- [x] Create the basic memetic skeleton
+- [x] Generate random initial population
 - [] Create the reparation and fitness method
+- [] Check the 2-OPT method
 
-## If ther's time
+## If there's time
 
 - [] Start with the modified CW method
 
