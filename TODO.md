@@ -7,11 +7,11 @@
     - [x] 2-OPT
     - [] Relocate
 - [x] Create the tournament selection method
-- [] Create the basic genetic skeleton
+- [x] Create the basic genetic skeleton
 - [x] Create the basic memetic skeleton
 - [x] Generate random initial population
 - [] Create the reparation and fitness method
-- [] Check the 2-OPT method
+- [x] Check the 2-OPT method
 
 ## If there's time
 

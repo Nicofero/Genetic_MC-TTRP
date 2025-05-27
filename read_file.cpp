@@ -535,7 +535,7 @@ void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix){
                     if (new_distance < best_distance){
                         best_route = route;
                         best_distance = new_distance;
-                        end = false;
+                        end = true;
                     }
                 }
             }
@@ -719,11 +719,11 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
                 s.cost = objectiveFunction(s,probl,costMatrix);
                 ext_pop.push_back(s);
             }
-            // if (distfloat(rng)<pls){
-            //     opt2Local(s,0,probl,costMatrix);
-            //     s.cost = objectiveFunction(s,probl,costMatrix);
-            //     ext_pop.push_back(s);
-            // }
+            if (distfloat(rng)<pls){
+                opt2Local(s,0,probl,costMatrix);
+                s.cost = objectiveFunction(s,probl,costMatrix);
+                ext_pop.push_back(s);
+            }
         }
         cout << "Mutation done" << endl;
 
