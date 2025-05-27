@@ -11,7 +11,7 @@
 - [x] Create the basic memetic skeleton
 - [x] Generate random initial population
 - [] Create the reparation and fitness method
-- [x] Check the 2-OPT method
+- [x] Feasability check
 
 ## If there's time
 

@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <ctime>
 #include <random>
+#include <omp.h>
 using namespace std;
 
 //Regular text
@@ -51,16 +52,17 @@ class Client{
 class Instance {
 
     private:
-        float truck_c;
-        float trailer_c;
-        float truck_comp_c;
-        float trailer_comp_c;
+        float truck_c;  // Truck capacity
+        float trailer_c;    // Trailer capacity
+        float truck_comp_c; // Truck compartment capacity
+        float trailer_comp_c;  // Trailer compartment capacity
         int truck_N;
         int trailer_N;
         int nClients;
         int nLoads;
         Client depot;
         std::vector<Client> clients;
+        std::vector<float> allDemand;
     public:
         Instance(std::string filename,int mode = 0) {
             std::ifstream file(filename);
@@ -164,18 +166,30 @@ class Instance {
         int gettruck_c() { return truck_c; };
         int gettrailer_c() { return trailer_c; };
         std::vector<float> getAllDemand(){
-            std::vector<float> allDemand;
-            int i;
-            float demand;
-            for(i=0;i<nLoads;i++){
-                demand = 0;
-                for(Client client: clients){
-                    demand+= client.getDemand()[i];
+            if(allDemand.empty()){
+                std::vector<float> allDemand;
+                int i;
+                float demand;
+                for(i=0;i<nLoads;i++){
+                    demand = 0;
+                    for(Client client: clients){
+                        demand+= client.getDemand()[i];
+                    }
+                    allDemand.push_back(demand);
                 }
-                allDemand.push_back(demand);
+                this->allDemand = allDemand;
+                return allDemand;
+            }else{
+                return allDemand;
             }
-            return allDemand;
+
         }
+        int getNCompartmentsTruck (){
+            return int(truck_c/truck_comp_c);
+        }
+        int getNCompartmentsTrailer (){
+            return int(trailer_c/trailer_comp_c);
+         }
 };
 
 // Simple matrix class
@@ -279,7 +293,82 @@ class Solution {
                 cout << endl;
             }
         }
+        vector<int> toSingleRoute (){
+            vector<int> route;
+            for(vector<int> elem: routes){
+                route.insert(route.end(),elem.begin(),elem.end());
+            }
+            return route;
+        }
         float cost;
+        // Gets trailers needed for the solution
+        int trailers_needed(Instance &probl){
+            int trailers=0;
+            for(vector<int> route: routes){
+                if(probl.getClients()[route[0]-1].getType() == 0) trailers++;
+            }
+            return trailers;
+        }
+        // Gets trucks needed for the solution
+        int trucks_needed() {return routes.size();}
+        bool isFeasible(Instance &probl){
+            if (trailers_needed(probl)>probl.getTrailer_N()){
+                return false;
+            }
+            if (trucks_needed()>probl.getTruck_N()){
+                return false;
+            }
+
+            // Max compartments for each type of trip
+            int max_comp_trailer = probl.getNCompartmentsTrailer(), max_comp_truck = probl.getNCompartmentsTruck();
+
+            int route_type, aux_trailer, aux_truck;
+            vector<float> demand;
+            vector<Client> clients = probl.getClients();
+
+            for(vector<int> rt: routes){
+                // Get route type to get                 
+                route_type = clients[rt[0]-1].getType();
+                switch (route_type){
+                    case 0: // VC route
+                        aux_trailer = max_comp_trailer;
+                        aux_truck = max_comp_truck;
+                        for (int elem: rt){
+                            demand = clients[elem-1].getDemand();
+                            for (float load: demand){
+                                if (clients[elem-1].getType() == 0){
+                                    aux_truck-=ceil(load/probl.getTruck_comp_c());
+                                }else{
+                                    aux_trailer-=ceil(load/probl.getTruck_comp_c());
+                                }
+
+                                if (aux_truck < 0 || aux_trailer < 0){
+                                    return false;
+                                }
+                            }
+                        }
+                        break;
+                    
+                    case 1: // TC route
+                        aux_truck = max_comp_truck;
+                        for (int elem: rt){
+                            demand = clients[elem-1].getDemand();
+                            for (float load:demand){
+                                aux_truck-=ceil(load/probl.getTruck_comp_c());
+                                if (aux_truck <0){
+                                    return false;
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        cout << RED << "YOU SHALL NEVER BE HERE" << WHT << endl;
+                        return false;
+                        break;
+                }
+            }
+            return true;
+        }
 };
 
 // PMX function for the crossover
@@ -393,16 +482,16 @@ Solution GVRX(Solution &parent1, Solution &parent2, Matrix &costMatrix){
             child.addRoute(new_route);            
         }
     }
-    if (child.getRoutes().empty()){
-        cout << "Child empty" << endl;
-        for (int elem:parent1.getRoutes()[0]) cout << elem << " ";
-        cout << endl;
-        for (int elem:parent2.getRoutes()[0]) cout << elem << " ";
-        cout << endl;
-        cout << "Subroute" << endl;
-        for (int elem:subroute) cout << elem << " ";
-        cout << endl;
-    }
+    // if (child.getRoutes().empty()){
+    //     cout << "Child empty" << endl;
+    //     for (int elem:parent1.getRoutes()[0]) cout << elem << " ";
+    //     cout << endl;
+    //     for (int elem:parent2.getRoutes()[0]) cout << elem << " ";
+    //     cout << endl;
+    //     cout << "Subroute" << endl;
+    //     for (int elem:subroute) cout << elem << " ";
+    //     cout << endl;
+    // }
     return child;
 }
 
@@ -681,8 +770,8 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
     best_cost = pop[0].cost;
     best_sol = pop[0];
 
-    cout << "New best solution: " << best_cost << endl;
-    best_sol.print();
+    // cout << "New best solution: " << best_cost << endl;
+    // best_sol.print();
 
     if (maxiter > 5000) maxiternor = maxiter/100;
     else maxiternor = 50;
@@ -693,12 +782,12 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
 
     while(alpha < maxiter && beta < maxiternor){
         ext_pop = pop;
-        cout << "New pop done" << endl;
+        // cout << "New pop done" << endl;
         // Selection and crossover
         nParents = ceil(pc*size)/2;
         // cout << nParents << endl;
         i = 0;
-        cout << "----> Iteration " << alpha << endl;
+        // cout << "----> Iteration " << alpha << endl;
         while(i<nParents){
             selectParents(p1,p2,probl,costMatrix,pop);
             child = GVRX(pop[p1],pop[p2],costMatrix);
@@ -710,9 +799,10 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
             }
             // cout << "New child" << endl;
         }
-        cout << "Crossover done" << endl;
+        // cout << "Crossover done" << endl;
 
         // Mutation and local search
+        // #pragma omp parallel for
         for(Solution &s: pop){
             if (distfloat(rng)<pm){
                 inversionMutation(s);
@@ -725,7 +815,7 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
                 ext_pop.push_back(s);
             }
         }
-        cout << "Mutation done" << endl;
+        // cout << "Mutation done" << endl;
 
         // Minima update
 
@@ -733,29 +823,36 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
         std::sort(ext_pop.begin(), ext_pop.end(), [](const Solution& a, const Solution& b) {
             return a.cost < b.cost;
         });
-        cout << "Sort done" << endl;
+        // cout << "Sort done" << endl;
 
         pop.assign(ext_pop.begin(),ext_pop.begin()+size);
         
-        cout << "New pop done" << endl;
+        // cout << "New pop done" << endl;
 
         if (pop[0].cost < best_cost){
             best_cost = pop[0].cost;
             best_sol = pop[0];
             beta = 0;
-            cout << "Best cost updated" << endl;
+            // cout << "Best cost updated" << endl;
         }else{
             beta++;
         }
 
-        cout << "Best cost: " << best_cost << endl;
+        // cout << "Best cost: " << best_cost << endl;
 
-        cout << "Update done" << endl;
+        // cout << "Update done" << endl;
 
         alpha++;
     }
 
     return best_sol;
+}
+
+// Stupid function for easy print of vectors
+
+void print_vector(const vector<int> &veect){
+    for (int elem: veect) cout << elem << " ";
+    cout << endl;
 }
 
 
@@ -830,6 +927,12 @@ int main(int argc, char* argv[]) {
     cout << "\nThe best solution found is:" << endl;
     best_route.print();
     cout << "The cost of this solution is: " << objectiveFunction(best_route,instance,distance_matrix) << endl;
+
+    if (best_route.isFeasible(instance)) cout << "The route is feasible" << endl;
+    else cout << "The route isn't feasible" << endl;
+
+    if (sol1.isFeasible(instance)) cout << "The route is feasible" << endl;
+    else cout << "The route isn't feasible" << endl;
 
     return 0;
 }
