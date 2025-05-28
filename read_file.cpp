@@ -221,41 +221,22 @@ float distance(Client a, Client b) {
     return std::sqrt(pow(a.getX() - b.getX(), 2) + pow(a.getY() - b.getY(), 2));
 }
 
-// TODO: Change this function
+// Creates distance matrix
 Matrix distanceMatrix(Instance instance) {
     int n = instance.getnClients();
     Matrix dist(n+1, n+1);
     // distance from depot to clients
-    for(Client client: instance.getVc_clients()){
-        dist.at(0, client.getId()) = distance(instance.getDepot(), client);
-        dist.at(client.getId(), 0) = dist.at(0, client.getId());
-    }
-    for(Client client: instance.getTc_clients()){
+    for(Client client: instance.getClients()){
         dist.at(0, client.getId()) = distance(instance.getDepot(), client);
         dist.at(client.getId(), 0) = dist.at(0, client.getId());
     }
     // distance from clients to clients
-    for(Client client1: instance.getVc_clients()){
-        for(Client client2: instance.getVc_clients()){
+    for(Client client1: instance.getClients()){
+        for(Client client2: instance.getClients()){
             if(client1.getId() != client2.getId()){
                 dist.at(client1.getId(), client2.getId()) = distance(client1, client2);
                 dist.at(client2.getId(), client1.getId()) = dist.at(client1.getId(), client2.getId());
             }
-        }
-    }
-    for(Client client1: instance.getTc_clients()){
-        for(Client client2: instance.getTc_clients()){
-            if(client1.getId() != client2.getId()){
-                dist.at(client1.getId(), client2.getId()) = distance(client1, client2);
-                dist.at(client2.getId(), client1.getId()) = dist.at(client1.getId(), client2.getId());
-            }
-        }
-    }
-    // distance from VC clients to TC clients
-    for(Client client1: instance.getVc_clients()){
-        for(Client client2: instance.getTc_clients()){
-            dist.at(client1.getId(), client2.getId()) = distance(client1, client2);
-            dist.at(client2.getId(), client1.getId()) = dist.at(client1.getId(), client2.getId());
         }
     }
     return dist;
@@ -594,13 +575,33 @@ void relocate (Solution &sol,int element, int route, int position){
     sol.getRoutes()[route].insert(sol.getRoutes()[route].begin()+position,element);
 }
 
-// Relocation local search
-void relocationLocal (Solution &sol,int element, int route, int position){
-    //TODO:
+// Relocation local search. Returns the route where insertion happened
+// We supose that every solution that is going through local search is feasible
+int relocationLocal (Solution &sol,Instance &inst){
+    // uniform_int_distribution<int> dist(0,sol.getRoutes().size()-1);
+    int selected_route=0, selected_individual;
+    Solution changes;
+    if (sol.getRoutes().size()>1){
+        // Search for a feasible relocation. 
+        for(int i=0;i<int(sol.getRoutes().size());i++){
+            for (int elem: sol.getRoutes()[i]){
+                for (int j=0;j<int(sol.getRoutes().size());j++){
+                    if (j!=i){
+                        for (int k=0;k<int(sol.getRoutes()[j].size());k++){
+                            changes = sol;
+                            // TODO
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return selected_route;
 }
 
 // 2-OPT atomic function
 void opt2 (vector<int> &route,int edge1,int edge2){
+    // edge1>=1 to not change the type of route
     if (edge1 >= 1 && edge2 < int(route.size()) && edge1 < edge2) {
         reverse(route.begin() + edge1, route.begin() + edge2 + 1);
     }
@@ -612,11 +613,13 @@ void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix){
     vector<int> best_route;
     float new_distance;
     float best_distance = objectiveFunction(sol,probl,costMatrix);
-    bool end = true;
+    bool end;
 
     // Only if route to be changed is more than one element
     if (route.size()>1){
         do{
+            end = true;
+            // i=1 to not change the type of route
             for(int i=1;i<int(route.size()-1) && end;i++){
                 for(int j=i;j<int(route.size()) && end;j++){
                     opt2(route,i,j);
@@ -624,7 +627,7 @@ void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix){
                     if (new_distance < best_distance){
                         best_route = route;
                         best_distance = new_distance;
-                        end = true;
+                        end = false;
                     }
                 }
             }
