@@ -748,8 +748,22 @@ void selectParents(int &p1, int &p2, Instance &probl, Matrix &costMatrix, vector
     p2 = tournamentSelection(tournament,probl,costMatrix);
 }
 
+void drawProgressBar(const std::string& name, int value, int max_value, int bar_width = 40) {
+    int filled = (value * bar_width) / max_value;
+    std::string bar = std::string(filled, '#') + std::string(bar_width - filled, '-');
+    std::cout << name << ": [" << bar << "] " << value << "/" << max_value << "\n";
+}
 
-Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=10000,float pc=0.8, float pm=0.4, float pls=0.3){
+void updateProgress(int alpha, int beta, int max_value_alpha, int max_value_beta) {
+    // Move the cursor up two lines
+    std::cout << "\033[F\033[F"; // ANSI escape codes to move cursor up
+    drawProgressBar("Maxiter", alpha, max_value_alpha);
+    drawProgressBar("MaxiterNC", beta, max_value_beta);
+    std::cout.flush();
+}
+
+
+Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=10000,float pc=0.8, float pm=0.4, float pls=0.3, bool verbose=false){
     Solution best_sol;
     float best_cost;
     if (size < 4){
@@ -782,6 +796,10 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
     //     cout << "Child " << i << endl;
     //     pop[i].print();
     // }
+    if(verbose){
+        drawProgressBar("Maxiter",alpha,maxiter);
+        drawProgressBar("MaxiterNC",beta,maxiternor);
+    }
 
     while(alpha < maxiter && beta < maxiternor){
         ext_pop = pop;
@@ -846,6 +864,10 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
         // cout << "Update done" << endl;
 
         alpha++;
+
+        if (verbose){
+            updateProgress(alpha,beta,maxiter,maxiternor);
+        }
     }
 
     return best_sol;
@@ -925,7 +947,7 @@ int main(int argc, char* argv[]) {
     cout << "Child after relocation:" << endl;
     child.print();
 
-    Solution best_route = memeticLoop(10,instance,distance_matrix);
+    Solution best_route = memeticLoop(10,instance,distance_matrix,10000,0.8,0.4,0.3,true);
 
     cout << "\nThe best solution found is:" << endl;
     best_route.print();
