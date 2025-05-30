@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <ctime>
 #include <random>
+#include <limits>
 #include <omp.h>
 using namespace std;
 
@@ -299,14 +300,12 @@ class Solution {
             if (trucks_needed()>probl.getTruck_N()){
                 return false;
             }
-
             // Max compartments for each type of trip
             int max_comp_trailer = probl.getNCompartmentsTrailer(), max_comp_truck = probl.getNCompartmentsTruck();
-
+            
             int route_type, aux_trailer, aux_truck;
             vector<float> demand;
             vector<Client> clients = probl.getClients();
-
             for(vector<int> rt: routes){
                 // Get route type to get                 
                 route_type = clients[rt[0]-1].getType();
@@ -430,7 +429,7 @@ Solution GVRX(Solution &parent1, Solution &parent2, Matrix &costMatrix){
     // for(int elem:subroute) cout << elem << " ";
     // cout << endl;
 
-    float min = 100000000.;
+    float min = numeric_limits<float>::infinity();
     int i=0,element;
     //Select the closest client to the first client of the sub-route
     for(vector<int> route: parent1.getRoutes()){
@@ -567,19 +566,19 @@ Matrix randomSymMatrix(int size){
 void relocate (Solution &sol,int element, int route, int position){
 
     vector<int> pos = sol.findElement(element);
-
-    sol.getRoutes()[pos[0]].erase(sol.getRoutes()[pos[0]].begin()+pos[1]);
+    sol.getRoutes()[pos[0]].erase(sol.getRoutes()[pos[0]].begin()+pos[1]);    
+    sol.getRoutes()[route].insert(sol.getRoutes()[route].begin()+position,element);
     if (sol.getRoutes()[pos[0]].empty()){        
         sol.getRoutes().erase(sol.getRoutes().begin()+pos[0]);
     }
-    sol.getRoutes()[route].insert(sol.getRoutes()[route].begin()+position,element);
+    
 }
 
 // Relocation local search. Returns the route where insertion happened
 // We supose that every solution that is going through local search is feasible
-int relocationLocal (Solution &sol,Instance &inst){
+int relocationLocal (Solution &sol,Instance &inst, Matrix &cost_matrix){
     // uniform_int_distribution<int> dist(0,sol.getRoutes().size()-1);
-    int selected_route=0, selected_individual;
+    float best_sol = sol.cost, sol_act;
     Solution changes;
     if (sol.getRoutes().size()>1){
         // Search for a feasible relocation. 
@@ -589,14 +588,21 @@ int relocationLocal (Solution &sol,Instance &inst){
                     if (j!=i){
                         for (int k=0;k<int(sol.getRoutes()[j].size());k++){
                             changes = sol;
-                            // TODO
+                            relocate(changes,elem,j,k);
+                            if(changes.isFeasible(inst)){
+                                sol_act = objectiveFunction(changes,inst,cost_matrix);
+                                if (sol_act < best_sol){
+                                    sol = changes;
+                                    return j;
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
-    return selected_route;
+    return -1;
 }
 
 // 2-OPT atomic function
@@ -641,45 +647,21 @@ void routeOpt (){
 }
 
 
-// FIXME: I dont like this code
 // Tournament selection (4 participants)
 int tournamentSelection(vector<Solution> &candidates,Instance &probl, Matrix &costMatrix){
-    int lb,win;
-    float c0,c1,c2,c3;
-    c0 = objectiveFunction(candidates[0],probl,costMatrix);
-    c1 = objectiveFunction(candidates[1],probl,costMatrix);
-    c2 = objectiveFunction(candidates[2],probl,costMatrix);
-    c3 = objectiveFunction(candidates[3],probl,costMatrix);
-
-    // Left bracket
-    if(c0 < c1){
-        lb= 0;
-    }else lb=1;
-
-    if(c2 < c3){
-        switch (lb){
-            case 0:
-                if (c0 < c2) win = 0;
-                else win =2;
-                break;
-            case 1:
-                if (c1 < c2) win = 1;
-                else win =2;
-                break;
-        }
-    }else{
-        switch (lb){
-            case 0:
-                if (c0 < c3) win = 0;
-                else win =3;
-                break;
-            case 1:
-                if (c1 < c3) win = 1;
-                else win =3;
-                break;
-        }
+    std::vector<float> scores(4);
+    for (int i = 0; i < 4; ++i) {
+        scores[i] = objectiveFunction(candidates[i], probl, costMatrix);
     }
-    return win;
+
+    // Determine winner of left and right brackets
+    int leftWinner = (scores[0] < scores[1]) ? 0 : 1;
+    int rightWinner = (scores[2] < scores[3]) ? 2 : 3;
+
+    // Final match between left and right bracket winners
+    int finalWinner = (scores[leftWinner] < scores[rightWinner]) ? leftWinner : rightWinner;
+
+    return finalWinner;
 }
 
 std::vector<int> generate_random_permutation(int size) {
@@ -709,6 +691,68 @@ Solution ssplit (vector<int> &perm){
         sol.getRoutes().push_back(route);
     }
     return sol;
+
+}
+
+Solution tempssplit (vector<int> &route, Instance &inst, Matrix &cost_matrix){
+    int N = route.size(), comp_used_truck, comp_used_trailer, j, route_type;
+    vector<float> varray(N);
+    vector<int> predecessor(N);
+    float cost;
+    // Set label V0 to 0
+    varray[0] = 0.;
+    predecessor[0] = 0;
+    // Set each other label Vi to +∞, for 1 ≤ i ≤ n
+    for (int i=1;i<N;i++){
+        varray[i] = numeric_limits<float>::max();
+        predecessor[i] = 0;
+    }
+
+    // Max compartments for each type of trip
+    int max_comp_trailer = inst.getNCompartmentsTrailer(), max_comp_truck = inst.getNCompartmentsTruck();
+
+    for (int i=1;i<N;i++){
+        cost = 0;
+        // Set load(p) to 0, for 1 ≤ p ≤ m
+        comp_used_trailer = 0;
+        comp_used_truck = 0;
+        route_type = inst.getClients()[route[i]-1].getType();
+
+        do{
+            // Update load for route type
+            for (float elem:inst.getClients()[route[i]-1].getDemand()){
+                if (inst.getClients()[route[i]-1].getType() == 0 && route_type == 0){
+                    comp_used_trailer+= ceil(elem/inst.getTrailer_comp_c());
+                }else{
+                    comp_used_truck+= ceil(elem/inst.getTruck_comp_c());
+                }
+            }
+
+            if (i==j){
+                cost = 2*cost_matrix.at(0,j);
+            }else{
+                cost+= cost_matrix.at(j-1,j) - cost_matrix.at(j-1,0) + cost_matrix.at(0,j);
+            }
+
+            if (comp_used_truck < max_comp_truck && comp_used_trailer < max_comp_trailer){
+                if (varray[i-1]+cost < varray[j]){
+                    varray[j] = varray[i-1]+cost;
+                    predecessor[j] = i-1;
+                }
+                j++;
+            }
+            
+        }while(j<N && comp_used_truck < max_comp_truck && comp_used_trailer < max_comp_trailer);
+        //         If load(p) ≤ Qp and cost ≤ L then
+        //             If Vi−1 + cost < Vj then
+        //                 Set Vj = Vi−1 + cost
+        //                 Set Pj = i − 1
+        //             End if
+        //             Increment j by 1
+        //         End if
+        //     Until j > n or load(p) > Qp
+    }
+    // I dont know what to do now, like, i have an implicit graph, ok, but what now?
 
 }
 
@@ -772,7 +816,7 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
     }
     vector<Solution> pop = randomPopulation(size,probl.getnClients()), ext_pop, tournament(4);
     Solution child;
-    int alpha=0, beta=0, maxiternor, nParents, i, p1, p2;
+    int alpha=0, beta=0, maxiternor, nParents, i, p1, p2, route_local;
     uniform_int_distribution<int> dist(0,size-1);
     uniform_real_distribution<float> distfloat(0,1);
 
@@ -831,7 +875,11 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
                 ext_pop.push_back(s);
             }
             if (distfloat(rng)<pls){
-                opt2Local(s,0,probl,costMatrix);
+                // Relocation
+                route_local = relocationLocal(s,probl,costMatrix);
+                // 2-OPT
+                if (route_local==-1) route_local = dist(rng) % s.getRoutes().size();
+                opt2Local(s,route_local,probl,costMatrix);
                 s.cost = objectiveFunction(s,probl,costMatrix);
                 ext_pop.push_back(s);
             }
