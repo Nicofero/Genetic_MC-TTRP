@@ -295,9 +295,11 @@ class Solution {
         int trucks_needed() {return routes.size();}
         bool isFeasible(Instance &probl){
             if (trailers_needed(probl)>probl.getTrailer_N()){
+                // cout << "Too many trailers" << endl;
                 return false;
             }
             if (trucks_needed()>probl.getTruck_N()){
+                // cout << "Too many trucks" << endl;
                 return false;
             }
             // Max compartments for each type of trip
@@ -317,12 +319,16 @@ class Solution {
                             demand = clients[elem-1].getDemand();
                             for (float load: demand){
                                 if (clients[elem-1].getType() == 0){
-                                    aux_truck-=ceil(load/probl.getTruck_comp_c());
+                                    aux_trailer-=ceil(load/probl.getTrailer_comp_c());
                                 }else{
-                                    aux_trailer-=ceil(load/probl.getTruck_comp_c());
+                                    aux_truck-=ceil(load/probl.getTruck_comp_c());
                                 }
 
                                 if (aux_truck < 0 || aux_trailer < 0){
+                                    // if (aux_truck < 0)
+                                        // cout << "Too much load in the truck of a VR" << endl;
+                                    // else
+                                        // cout << "Too much load in the trailer of a VR" << endl;
                                     return false;
                                 }
                             }
@@ -336,6 +342,7 @@ class Solution {
                             for (float load:demand){
                                 aux_truck-=ceil(load/probl.getTruck_comp_c());
                                 if (aux_truck <0){
+                                    // cout << "Too much load in a TR" << endl;
                                     return false;
                                 }
                             }
@@ -348,6 +355,13 @@ class Solution {
                 }
             }
             return true;
+        }
+        vector<int> to_1D_array(){
+            vector<int> aux;
+            for(vector<int> rt: routes){
+                aux.insert(aux.end(),rt.begin(),rt.end());
+            }
+            return aux;
         }
 };
 
@@ -495,7 +509,7 @@ void inversionMutation(Solution &route) {
     reverse(rt.begin()+m,rt.end());
 }
 
-
+// TODO: Review this function
 // Objective function: Maybe for the subtours check if the next node after a VC is a TC and add that to the subtour instead 
 float objectiveFunction (Solution &sol, Instance &probl, Matrix &costMatrix){
     float cost = 0.;
@@ -673,76 +687,114 @@ std::vector<int> generate_random_permutation(int size) {
     return vec;
 }
 
-// FIXME: Receives a permutation of nodes and returns a Solution forming routes
-Solution ssplit (vector<int> &perm){
-    // To be changed
-    int s = perm.size(), rsize;
-    uniform_int_distribution<int> dist1(0, s-1);    
+// Deprecated: Receives a permutation of nodes and returns a Solution forming routes
+// Solution ssplit (vector<int> &perm){
+//     // To be changed
+//     int s = perm.size(), rsize;
+//     uniform_int_distribution<int> dist1(0, s-1);    
+//     Solution sol;
+//     vector<int> route;
+
+//     while(s>0){
+//         route = vector<int>();
+//         rsize = dist1(rng) % s;
+//         if(s==1 || rsize==0) rsize = 1;
+//         route.insert(route.begin(),perm.begin(),perm.begin()+rsize);
+//         perm.erase(perm.begin(),perm.begin()+rsize);
+//         s-=rsize;
+//         sol.getRoutes().push_back(route);
+//     }
+//     return sol;
+
+// }
+
+Solution extract_solution (vector<int> &predecessor, vector<int> &route){
+    int N = predecessor.size(),j=N,i;
     Solution sol;
-    vector<int> route;
+    vector<int> aux;
 
-    while(s>0){
-        route = vector<int>();
-        rsize = dist1(rng) % s;
-        if(s==1 || rsize==0) rsize = 1;
-        route.insert(route.begin(),perm.begin(),perm.begin()+rsize);
-        perm.erase(perm.begin(),perm.begin()+rsize);
-        s-=rsize;
-        sol.getRoutes().push_back(route);
-    }
+    do{
+        i = predecessor[j-1];
+        aux = vector<int>();
+        for (int k=i;k<j;k++){
+            aux.push_back(route[k]);
+        }
+        if(!aux.empty()){
+            sol.getRoutes().push_back(aux);
+        }
+        j=i;
+
+    }while(i!=0);
     return sol;
-
 }
 
-Solution tempssplit (vector<int> &route, Instance &inst, Matrix &cost_matrix){
-    int N = route.size(), comp_used_truck, comp_used_trailer, j, route_type;
-    vector<float> varray(N);
+Solution ssplit (vector<int> &route, Instance &inst, Matrix &cost_matrix){
+    int N = route.size(), comp_used_truck, comp_used_trailer, j, route_type, subtour;
+    vector<float> varray(N+1);
     vector<int> predecessor(N);
     float cost;
+    Solution new_route;
     // Set label V0 to 0
     varray[0] = 0.;
     predecessor[0] = 0;
     // Set each other label Vi to +∞, for 1 ≤ i ≤ n
     for (int i=1;i<N;i++){
-        varray[i] = numeric_limits<float>::max();
+        varray[i] = numeric_limits<float>::infinity();
         predecessor[i] = 0;
     }
-
+    varray[N] = numeric_limits<float>::infinity();
+    
     // Max compartments for each type of trip
     int max_comp_trailer = inst.getNCompartmentsTrailer(), max_comp_truck = inst.getNCompartmentsTruck();
 
-    for (int i=1;i<N;i++){
+    for (int i=1;i<=N;i++){
         cost = 0;
         // Set load(p) to 0, for 1 ≤ p ≤ m
         comp_used_trailer = 0;
         comp_used_truck = 0;
-        route_type = inst.getClients()[route[i]-1].getType();
-
+        subtour=-1;
+        route_type = inst.getClients()[route[i-1]-1].getType();
+        // cout << "Start " << i << endl;
+        j = i;
+        // j-1 is actual node
         do{
             // Update load for route type
-            for (float elem:inst.getClients()[route[i]-1].getDemand()){
-                if (inst.getClients()[route[i]-1].getType() == 0 && route_type == 0){
+            for (float elem:inst.getClients()[route[j-1]-1].getDemand()){
+                if (inst.getClients()[route[j-1]-1].getType() == 0 && route_type == 0){
                     comp_used_trailer+= ceil(elem/inst.getTrailer_comp_c());
                 }else{
                     comp_used_truck+= ceil(elem/inst.getTruck_comp_c());
                 }
             }
-
-            if (i==j){
-                cost = 2*cost_matrix.at(0,j);
-            }else{
-                cost+= cost_matrix.at(j-1,j) - cost_matrix.at(j-1,0) + cost_matrix.at(0,j);
+            // Subroute check
+            if (inst.getClients()[route[j-1]-1].getType() == 1 && route_type == 0 && subtour==-1){
+                subtour = route[j-2];
             }
-
+            // Update cost // SHOULD BE DONE
+            if (i==j){
+                // cout << "Cost act" << endl;
+                cost = 2*cost_matrix.at(0,route[j-1]);
+                // cout << "Cost act 2" << endl;
+            }else{
+                // Return from a subtour
+                if (subtour > 0 && inst.getClients()[route[j-1]-1].getType() == 0){
+                    cost+= cost_matrix.at(route[j-1],subtour) - cost_matrix.at(subtour,0) + cost_matrix.at(0,route[j-1]);
+                }else if (subtour > 0 && inst.getClients()[route[j-1]-1].getType() == 1){   // Enter subtour (add return to parking spot, remove from previous)
+                    cost+= cost_matrix.at(route[j-2],route[j-1]) - cost_matrix.at(route[j-2],subtour) + cost_matrix.at(subtour,route[j-1]);
+                }else{
+                    cost+= cost_matrix.at(route[j-2],route[j-1]) - cost_matrix.at(route[j-2],0) + cost_matrix.at(0,route[j-1]);
+                }
+            }
+            
             if (comp_used_truck < max_comp_truck && comp_used_trailer < max_comp_trailer){
                 if (varray[i-1]+cost < varray[j]){
                     varray[j] = varray[i-1]+cost;
-                    predecessor[j] = i-1;
+                    predecessor[j-1] = i-1;
                 }
                 j++;
             }
             
-        }while(j<N && comp_used_truck < max_comp_truck && comp_used_trailer < max_comp_trailer);
+        }while(j<=N && comp_used_truck < max_comp_truck && comp_used_trailer < max_comp_trailer);
         //         If load(p) ≤ Qp and cost ≤ L then
         //             If Vi−1 + cost < Vj then
         //                 Set Vj = Vi−1 + cost
@@ -754,10 +806,19 @@ Solution tempssplit (vector<int> &route, Instance &inst, Matrix &cost_matrix){
     }
     // I dont know what to do now, like, i have an implicit graph, ok, but what now?
 
+    new_route = extract_solution(predecessor,route);
+    return new_route;
+}
+
+// Wrapper for the memetic loop
+Solution ssplit (Solution &route, Instance &inst, Matrix &cost_matrix){
+    vector<int> route_vector = route.to_1D_array();
+
+    return ssplit(route_vector,inst,cost_matrix);
 }
 
 // Generates a random population with length nodes and size number of individuals 
-vector<Solution> randomPopulation (int size, int length){
+vector<Solution> randomPopulation (int size, int length, Instance &inst, Matrix &cost_matrix){
     vector<Solution> pop;
     vector<vector<int>> seeds;
     Solution aux;
@@ -767,9 +828,9 @@ vector<Solution> randomPopulation (int size, int length){
         seeds.push_back(generate_random_permutation(length));
     }
 
-    // Divide the individuals into random routes. FIXME: setup this as the s-split function
+    // Divide the individuals into random routes. 
     for(int i=0; i<size;i++){
-        pop.push_back(ssplit(seeds[i]));
+        pop.push_back(ssplit(seeds[i],inst,cost_matrix));
     }
 
     return pop;
@@ -814,7 +875,7 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
         cout << RED << "The population size must be bigger than 4" << WHT << endl;
         return best_sol;
     }
-    vector<Solution> pop = randomPopulation(size,probl.getnClients()), ext_pop, tournament(4);
+    vector<Solution> pop = randomPopulation(size,probl.getnClients(),probl,costMatrix), ext_pop, tournament(4);
     Solution child;
     int alpha=0, beta=0, maxiternor, nParents, i, p1, p2, route_local;
     uniform_int_distribution<int> dist(0,size-1);
@@ -857,7 +918,12 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
             selectParents(p1,p2,probl,costMatrix,pop);
             child = GVRX(pop[p1],pop[p2],costMatrix);
             // You can add here a function that checks variety in the population
+            
             if(!child.getRoutes().empty()){
+                // Fix the solution
+                if (!child.isFeasible(probl)){
+                    child = ssplit(child,probl,costMatrix);
+                }
                 child.cost = objectiveFunction(child,probl,costMatrix);
                 ext_pop.push_back(child);
                 i++;
@@ -871,10 +937,13 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
         for(Solution &s: pop){
             if (distfloat(rng)<pm){
                 inversionMutation(s);
+                if (!s.isFeasible(probl)){
+                    s = ssplit(s,probl,costMatrix);
+                }
                 s.cost = objectiveFunction(s,probl,costMatrix);
                 ext_pop.push_back(s);
             }
-            if (distfloat(rng)<pls){
+            if (distfloat(rng)<pls){ // Every method here mantains feasibility
                 // Relocation
                 route_local = relocationLocal(s,probl,costMatrix);
                 // 2-OPT
@@ -948,9 +1017,6 @@ int main(int argc, char* argv[]) {
     Matrix distance_matrix;
     distance_matrix = distanceMatrix(instance);
 
-    std::cout << instance.getAllDemand()[0] << std::endl;
-    std::cout << "Needed trucks: " << instance.getAllDemand()[0]/instance.gettruck_c() << std::endl;
-
     // std::vector<int> p1 = {1,6,3,4,5,2,9,7,8};
     // std::vector<int> p2 = {4,3,1,2,6,5,8,9,7};
 
@@ -963,37 +1029,37 @@ int main(int argc, char* argv[]) {
     // std::cout << std::endl;
 
     // GVR Crossover
-    Solution sol1,sol2;
+    // Solution sol1,sol2;
 
-    sol1.addRoute({1,2,3});
-    sol1.addRoute({4,5});
-    sol1.addRoute({6,7,8});
-    cout << "test" << endl;
-    sol2.addRoute({1,8});
-    sol2.addRoute({3,4,5,2});
-    sol2.addRoute({6,7});
+    // sol1.addRoute({1,2,3});
+    // sol1.addRoute({4,5});
+    // sol1.addRoute({6,7,8});
+    // cout << "test" << endl;
+    // sol2.addRoute({1,8});
+    // sol2.addRoute({3,4,5,2});
+    // sol2.addRoute({6,7});
 
-    Matrix mat = randomSymMatrix(8);
+    // Matrix mat = randomSymMatrix(8);
 
-    Solution child = GVRX(sol1,sol2,distance_matrix);
+    // Solution child = GVRX(sol1,sol2,distance_matrix);
 
-    cout << "Child after crossover:" << endl;
-    child.print();
+    // cout << "Child after crossover:" << endl;
+    // child.print();
 
-    inversionMutation(child);
+    // inversionMutation(child);
 
-    // distance_matrix.print();
-    cout << "Child after mutation:" << endl;
-    child.print();
+    // // distance_matrix.print();
+    // cout << "Child after mutation:" << endl;
+    // child.print();
 
-    float cost = objectiveFunction(child,instance,distance_matrix);
+    // float cost = objectiveFunction(child,instance,distance_matrix);
 
-    cout << "The cost of the trip is: " << cost << endl;
+    // cout << "The cost of the trip is: " << cost << endl;
 
-    relocate(child,4,0,0);
+    // relocate(child,4,0,0);
 
-    cout << "Child after relocation:" << endl;
-    child.print();
+    // cout << "Child after relocation:" << endl;
+    // child.print();
 
     Solution best_route = memeticLoop(10,instance,distance_matrix,10000,0.8,0.4,0.3,true);
 
@@ -1004,8 +1070,14 @@ int main(int argc, char* argv[]) {
     if (best_route.isFeasible(instance)) cout << "The route is feasible" << endl;
     else cout << "The route isn't feasible" << endl;
 
-    if (sol1.isFeasible(instance)) cout << "The route is feasible" << endl;
-    else cout << "The route isn't feasible" << endl;
-
+    // int not_f = 0;
+    // vector<int> perm;
+    // Solution sol;
+    // for (int i=0;i<10000;i++){
+        // perm = generate_random_permutation(instance.getnClients());
+        // sol = ssplit(perm,instance,distance_matrix);
+    //     if (!sol.isFeasible(instance)) not_f++;
+    // }
+    // cout << "Non feasible solutions: " << not_f << endl;
     return 0;
 }
