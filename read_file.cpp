@@ -11,6 +11,7 @@
 #include <random>
 #include <limits>
 #include <omp.h>
+#include <atomic>
 using namespace std;
 
 //Regular text
@@ -882,6 +883,7 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
     uniform_real_distribution<float> distfloat(0,1);
 
     // Assign costs for the population
+    #pragma omp parallel for
     for(Solution& elem:pop){
         elem.cost = objectiveFunction(elem,probl,costMatrix);
     }
@@ -914,59 +916,131 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
         // cout << nParents << endl;
         i = 0;
         // cout << "----> Iteration " << alpha << endl;
-        while(i<nParents){
-            selectParents(p1,p2,probl,costMatrix,pop);
-            child = GVRX(pop[p1],pop[p2],costMatrix);
-            // You can add here a function that checks variety in the population
+        // while(i<nParents){
+        //     selectParents(p1,p2,probl,costMatrix,pop);
+        //     child = GVRX(pop[p1],pop[p2],costMatrix);
+        //     // You can add here a function that checks variety in the population
             
-            if(!child.getRoutes().empty()){
-                // Fix the solution
-                if (!child.isFeasible(probl)){
-                    child = ssplit(child,probl,costMatrix);
+        //     if(!child.getRoutes().empty()){
+        //         // Fix the solution
+        //         if (!child.isFeasible(probl)){
+        //             child = ssplit(child,probl,costMatrix);
+        //         }
+        //         child.cost = objectiveFunction(child,probl,costMatrix);
+        //         ext_pop.push_back(child);
+        //         i++;
+        //     }
+        //     // cout << "New child" << endl;
+        // }
+        // Parallel version
+        std::atomic<int> parallel_i(0);
+        #pragma omp parallel
+        {
+            // Local storage for valid children
+            std::vector<Solution> local_ext_pop;
+
+            // Local RNG
+            std::mt19937 rng_local(std::random_device{}() + omp_get_thread_num());
+
+            while (true) {
+                int current = parallel_i.load();
+                if (current >= nParents) break;
+
+                // Parent selection and crossover
+                int p1, p2;
+                selectParents(p1, p2, probl, costMatrix, pop);  // assumes thread-safe or RNG-only
+                Solution child = GVRX(pop[p1], pop[p2], costMatrix);
+
+                if (!child.getRoutes().empty()) {
+                    if (!child.isFeasible(probl)) {
+                        child = ssplit(child, probl, costMatrix);
+                    }
+                    child.cost = objectiveFunction(child, probl, costMatrix);
+
+                    // Atomically claim a slot if we’re still under limit
+                    int idx = parallel_i.fetch_add(1);
+                    if (idx < nParents) {
+                        local_ext_pop.push_back(child);
+                    } else {
+                        break;  // We went over the limit — don’t keep adding
+                    }
                 }
-                child.cost = objectiveFunction(child,probl,costMatrix);
-                ext_pop.push_back(child);
-                i++;
             }
-            // cout << "New child" << endl;
+
+            // Merge thread-local children into global vector
+            #pragma omp critical
+            ext_pop.insert(ext_pop.end(), local_ext_pop.begin(), local_ext_pop.end());
         }
         // cout << "Crossover done" << endl;
 
         // Mutation and local search
         // #pragma omp parallel for
-        for(Solution &s: pop){
-            if (distfloat(rng)<pm){
-                inversionMutation(s);
-                if (!s.isFeasible(probl)){
-                    s = ssplit(s,probl,costMatrix);
-                }
-                s.cost = objectiveFunction(s,probl,costMatrix);
-                ext_pop.push_back(s);
-            }
-            if (distfloat(rng)<pls){ // Every method here mantains feasibility
-                // Relocation
-                route_local = relocationLocal(s,probl,costMatrix);
-                // 2-OPT
-                if (route_local==-1) route_local = dist(rng) % s.getRoutes().size();
-                opt2Local(s,route_local,probl,costMatrix);
-                s.cost = objectiveFunction(s,probl,costMatrix);
-                ext_pop.push_back(s);
-            }
-        }
-        // cout << "Mutation done" << endl;
+        // for(Solution &s: pop){
+        //     if (distfloat(rng)<pm){
+        //         inversionMutation(s);
+        //         if (!s.isFeasible(probl)){
+        //             s = ssplit(s,probl,costMatrix);
+        //         }
+        //         s.cost = objectiveFunction(s,probl,costMatrix);
+        //         ext_pop.push_back(s);
+        //     }
+        //     if (distfloat(rng)<pls){ // Every method here mantains feasibility
+        //         // Relocation
+        //         route_local = relocationLocal(s,probl,costMatrix);
+        //         // 2-OPT
+        //         if (route_local==-1) route_local = dist(rng) % s.getRoutes().size();
+        //         opt2Local(s,route_local,probl,costMatrix);
+        //         s.cost = objectiveFunction(s,probl,costMatrix);
+        //         ext_pop.push_back(s);
+        //     }
+        // }
+        #pragma omp parallel
+        {
+            // Create a thread-local RNG
+            std::mt19937 rng_local(std::random_device{}() + omp_get_thread_num());
+            std::uniform_real_distribution<float> distfloat(0.0f, 1.0f);
+            std::uniform_int_distribution<int> dist;  // You may need to specify bounds later
 
+            // Thread-local vector to collect new solutions
+            std::vector<Solution> local_ext_pop;
+
+            // Parallel loop
+            #pragma omp for nowait
+            for (int i = 0; i < int(pop.size()); ++i) {
+                Solution s = pop[i];  // Work on a copy, not the original
+
+                if (distfloat(rng_local) < pm) {
+                    inversionMutation(s);
+                    if (!s.isFeasible(probl)) {
+                        s = ssplit(s, probl, costMatrix);
+                    }
+                    s.cost = objectiveFunction(s, probl, costMatrix);
+                    local_ext_pop.push_back(s);
+                }
+
+                if (distfloat(rng_local) < pls) {
+                    int route_local = relocationLocal(s, probl, costMatrix);
+                    if (route_local == -1)
+                        route_local = dist(rng_local) % s.getRoutes().size();
+                    opt2Local(s, route_local, probl, costMatrix);
+                    s.cost = objectiveFunction(s, probl, costMatrix);
+                    local_ext_pop.push_back(s);
+                }
+            }
+
+            // Merge results into the shared vector
+            #pragma omp critical
+            ext_pop.insert(ext_pop.end(), local_ext_pop.begin(), local_ext_pop.end());
+        }
         // Minima update
 
         // Sort the extended population
         std::sort(ext_pop.begin(), ext_pop.end(), [](const Solution& a, const Solution& b) {
             return a.cost < b.cost;
         });
-        // cout << "Sort done" << endl;
-
+        // TODO: Maybe here i can shuffle the second half of the ext_pop to add some randomness to the population
         pop.assign(ext_pop.begin(),ext_pop.begin()+size);
         
-        // cout << "New pop done" << endl;
-
         if (pop[0].cost < best_cost){
             best_cost = pop[0].cost;
             best_sol = pop[0];
@@ -975,10 +1049,6 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
         }else{
             beta++;
         }
-
-        // cout << "Best cost: " << best_cost << endl;
-
-        // cout << "Update done" << endl;
 
         alpha++;
 
@@ -1061,7 +1131,9 @@ int main(int argc, char* argv[]) {
     // cout << "Child after relocation:" << endl;
     // child.print();
 
-    Solution best_route = memeticLoop(10,instance,distance_matrix,10000,0.8,0.4,0.3,true);
+    std::cout << "Max threads: " << omp_get_max_threads() << "\n";
+
+    Solution best_route = memeticLoop(32,instance,distance_matrix,10000,0.9,0.5,0.5,true);
 
     cout << "\nThe best solution found is:" << endl;
     best_route.print();
