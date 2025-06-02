@@ -12,6 +12,7 @@
 #include <limits>
 #include <omp.h>
 #include <atomic>
+#include <chrono>
 using namespace std;
 
 //Regular text
@@ -76,7 +77,7 @@ class Instance {
             float d;                  
             if (!file.is_open()) {
                 std::cerr << "Error opening file" << std::endl;
-                return;
+                exit(EXIT_FAILURE);
             }
 
             std::string line;
@@ -267,14 +268,18 @@ class Solution {
             }
             return pos;
         };
-        void print(){
+        void print(bool in_line=false, std::ostream& out = std::cout){
             int i = 0;
             for(vector<int> route:routes){
                 i++;
-                cout << "Route " << i << ": ";
-                for(int elem: route) cout << elem << " ";
-                cout << endl;
+                out << "Route " << i << ": ";
+                for(int elem: route) out << elem << " ";
+                if (in_line)
+                    out << "; ";                    
+                else
+                    out << endl;
             }
+            out << endl;
         }
         vector<int> toSingleRoute (){
             vector<int> route;
@@ -878,7 +883,7 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
     }
     vector<Solution> pop = randomPopulation(size,probl.getnClients(),probl,costMatrix), ext_pop, tournament(4);
     Solution child;
-    int alpha=0, beta=0, maxiternor, nParents, i, p1, p2, route_local;
+    int alpha=0, beta=0, maxiternor, nParents; // i, p1, p2, route_local;
     uniform_int_distribution<int> dist(0,size-1);
     uniform_real_distribution<float> distfloat(0,1);
 
@@ -914,7 +919,7 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
         // Selection and crossover
         nParents = ceil(pc*size)/2;
         // cout << nParents << endl;
-        i = 0;
+        // i = 0;
         // cout << "----> Iteration " << alpha << endl;
         // while(i<nParents){
         //     selectParents(p1,p2,probl,costMatrix,pop);
@@ -1132,15 +1137,49 @@ int main(int argc, char* argv[]) {
     // child.print();
 
     std::cout << "Max threads: " << omp_get_max_threads() << "\n";
-
+    int pop_size;
+    if (omp_get_max_threads() > 50){
+        pop_size = omp_get_max_threads();
+    } else{
+        pop_size = 4 * omp_get_max_threads();
+    }
+    std::cout << "Pop size: " << pop_size << "\n";
+   
+    auto start = chrono::high_resolution_clock::now();
     Solution best_route = memeticLoop(32,instance,distance_matrix,10000,0.9,0.5,0.5,true);
+    auto end = chrono::high_resolution_clock::now();
 
-    cout << "\nThe best solution found is:" << endl;
-    best_route.print();
-    cout << "The cost of this solution is: " << objectiveFunction(best_route,instance,distance_matrix) << endl;
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end-start);
 
-    if (best_route.isFeasible(instance)) cout << "The route is feasible" << endl;
-    else cout << "The route isn't feasible" << endl;
+    int timer = duration.count();
+
+    // cout << "\nThe best solution found is:" << endl;
+    std::ostringstream ss;    
+    best_route.print(true,ss);
+    std::string result = ss.str();
+    // cout << result << endl;
+    float best_cost = objectiveFunction(best_route,instance,distance_matrix);   
+    cout << "The cost of this solution is: " << best_cost << endl; 
+
+    // Print to a CSV file
+    std::ofstream outFile("MCTTRP.csv", std::ios::app);
+
+    // Get ID of file
+    std::string id = filename.substr(filename.find("/")+1,filename.size());
+    id.erase(0,id.find("_")+1);
+    id.erase(0,id.find("_")+1);
+    id = id.substr(0,id.find("."));
+
+    if (outFile.is_open()) {
+        outFile << id << "," << best_cost << "," << float(timer)/1000. << "," << result << endl;
+        outFile.close(); // Always close the file
+        std::cout << "Data appended successfully.\n";
+    } else {
+        std::cerr << "Error opening file for appending.\n";
+    }
+
+    // if (best_route.isFeasible(instance)) cout << "The route is feasible" << endl;
+    // else cout << "The route isn't feasible" << endl;
 
     // int not_f = 0;
     // vector<int> perm;
