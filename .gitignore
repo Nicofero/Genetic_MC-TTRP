@@ -33,3 +33,6 @@
 
 # Vscode files
 .vscode
+
+# CESGA
+run_code.sh
