@@ -52,6 +52,30 @@ class Client{
         void setDemand(std::vector<float> demand) { this->demand = demand; };
 };
 
+// Simple matrix class
+class Matrix {
+private:
+    int rows, cols;
+    std::vector<float> data;
+
+public:
+    Matrix(int r, int c) : rows(r), cols(c), data(r * c) {}
+    Matrix() {};
+
+    float& at(int i, int j) {
+        return data[i * cols + j];
+    }
+
+    void print() const {
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                std::cout << data[i * cols + j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+};
+
 class Instance {
 
     private:
@@ -141,6 +165,57 @@ class Instance {
                 std::cout << "\n" << std::endl;
             }
         }
+        Matrix from_csv(string filename){
+            std::ifstream file(filename);            
+            string line;
+            getline(file,line);
+            getline(file,line);
+            std::stringstream ss(line);
+            vector<float> demand;
+            string item;
+            std::getline(ss, item, ','); truck_c = std::stoi(item);
+            std::getline(ss, item, ','); trailer_c = std::stoi(item);
+            std::getline(ss, item, ','); nClients = std::stoi(item);
+            std::getline(ss, item, ','); truck_N = std::stoi(item);
+            std::getline(ss, item, ','); trailer_N = std::stoi(item);
+            std::getline(ss, item, ','); nLoads = std::stoi(item);
+            std::getline(ss, item, ','); truck_comp_c = std::stoi(item);
+            std::getline(ss, item, ','); trailer_comp_c = std::stoi(item);
+            std::cout << "Parsed line: " << line << std::endl;
+
+            Matrix cost_mat(nClients+1,nClients+1);
+            getline(file,line);
+            int i=0,j=0;
+            while(getline(file,line)){
+                std::stringstream ss2(line);
+                Client client;            
+                demand = vector<float>();
+                j=-1;
+                while (getline(ss2, item,',')) {
+                    int value = std::stoi(item);
+                    if (j>=0 && j<9){
+                        cost_mat.at(i,j) = value;
+                    }else if (j>9){
+                        demand.push_back(float(value));
+                    }else if (j==9){
+                        client.setType(value);
+                    }else{
+                        client.setId(value);
+                    }
+                    j++;
+                }
+                client.setDemand(demand);
+                if(i==0){
+                    depot = client;
+                }else{
+                    clients.push_back(client);
+                }
+                
+                std::cout << "Parsed line " << i << ": " << line << std::endl;
+                i++;
+            }
+            return cost_mat;
+        }
         Client getDepot() { return depot; };
         std::vector<Client> getVc_clients() {
             vector<Client> vc_clients;
@@ -193,30 +268,6 @@ class Instance {
         int getNCompartmentsTrailer (){
             return int(trailer_c/trailer_comp_c);
          }
-};
-
-// Simple matrix class
-class Matrix {
-private:
-    int rows, cols;
-    std::vector<float> data;
-
-public:
-    Matrix(int r, int c) : rows(r), cols(c), data(r * c) {}
-    Matrix() {};
-
-    float& at(int i, int j) {
-        return data[i * cols + j];
-    }
-
-    void print() const {
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
-                std::cout << data[i * cols + j] << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
 };
 
 // Distance function
@@ -515,6 +566,7 @@ void inversionMutation(Solution &route) {
     reverse(rt.begin()+m,rt.end());
 }
 
+// TODO: Review this function
 // TODO: Review this function
 // Objective function: Maybe for the subtours check if the next node after a VC is a TC and add that to the subtour instead 
 float objectiveFunction (Solution &sol, Instance &probl, Matrix &costMatrix){
@@ -1080,17 +1132,26 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     std::string filename = argv[1];
+
+    // Code for txt
     std::cout << "Reading file: " << filename << std::endl;
     std::string title = filename.substr(filename.find("/")+1,filename.size());
     title.erase(0,title.find("_")+1);
     title = title.substr(0,title.find("_"));
     int mode = (title == "TTRP");
-    // std::cout << mode << std::endl;
+    std::cout << mode << std::endl;
 
+    
     Instance instance(filename,mode);
     // instance.print();
     Matrix distance_matrix;
     distance_matrix = distanceMatrix(instance);
+
+    // Code for CSV
+    // Instance instance;
+    // Matrix distance_matrix = instance.from_csv(filename);
+    // instance.print();
+    // instance.print();
 
     // std::vector<int> p1 = {1,6,3,4,5,2,9,7,8};
     // std::vector<int> p2 = {4,3,1,2,6,5,8,9,7};
@@ -1190,5 +1251,6 @@ int main(int argc, char* argv[]) {
     //     if (!sol.isFeasible(instance)) not_f++;
     // }
     // cout << "Non feasible solutions: " << not_f << endl;
+
     return 0;
 }
