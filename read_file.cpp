@@ -193,11 +193,11 @@ class Instance {
                 j=-1;
                 while (getline(ss2, item,',')) {
                     int value = std::stoi(item);
-                    if (j>=0 && j<9){
+                    if (j>=0 && j<nClients+1){
                         cost_mat.at(i,j) = value;
-                    }else if (j>9){
+                    }else if (j>nClients+1){
                         demand.push_back(float(value));
-                    }else if (j==9){
+                    }else if (j==nClients+1){
                         client.setType(value);
                     }else{
                         client.setId(value);
@@ -350,12 +350,12 @@ class Solution {
         }
         // Gets trucks needed for the solution
         int trucks_needed() {return routes.size();}
-        bool isFeasible(Instance &probl){
-            if (trailers_needed(probl)>probl.getTrailer_N()){
+        bool isFeasible(Instance &probl,bool ignore_tn = true){
+            if (trailers_needed(probl)>probl.getTrailer_N() && ignore_tn){
                 // cout << "Too many trailers" << endl;
                 return false;
             }
-            if (trucks_needed()>probl.getTruck_N()){
+            if (trucks_needed()>probl.getTruck_N() && ignore_tn){
                 // cout << "Too many trucks" << endl;
                 return false;
             }
@@ -646,6 +646,122 @@ void relocate (Solution &sol,int element, int route, int position){
     
 }
 
+// Forceful relocation. Forces to relocate a route even if it doesnt improve the solution
+bool forceful_relocation(Solution &sol,Instance &inst, Matrix &cost_matrix){
+    Solution changes;
+    sol.print();
+    for(int i=0;i<int(sol.getRoutes().size());i++){
+        for (int j=0;j<int(sol.getRoutes().size());j++){
+            if(i!=j){
+                changes = sol;
+                changes.getRoutes()[j].insert(changes.getRoutes()[j].end(),changes.getRoutes()[i].begin(),changes.getRoutes()[i].end());
+                changes.getRoutes().erase(changes.getRoutes().begin()+i);
+                changes.print();
+                if (changes.isFeasible(inst,false)){
+                    sol = changes;
+                    return true;
+                }
+                else{
+                    cout << "Route " << i << " into route " << j << " doesnt work" << endl;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool ultra_forceful_relocation(Solution &sol,Instance &inst, Matrix &cost_matrix){
+    Solution changes;
+    // sol.print();
+    int numRoutes = sol.getRoutes().size();
+
+    for (int i = 0; i < numRoutes; i++) {
+        for (int j = 0; j < numRoutes; j++) {
+            if (i != j) {
+                changes = sol;
+
+                // Try full route relocation
+                changes.getRoutes()[j].insert(
+                    changes.getRoutes()[j].end(),
+                    changes.getRoutes()[i].begin(),
+                    changes.getRoutes()[i].end()
+                );
+                changes.getRoutes().erase(changes.getRoutes().begin() + i);
+
+                // changes.print();
+                if (changes.isFeasible(inst, false)) {
+                    sol = changes;
+                    return true;
+                } else {
+                    // cout << "Route " << i << " into route " << j << " doesn't work" << endl;
+                }
+
+                // --- Try splitting the route into two parts and relocating each part ---
+                if (numRoutes > 2) { // Need at least 3 routes to relocate into two others
+                    for (int k = 0; k < numRoutes; k++) {
+                        if (k != i && k != j) {
+                            changes = sol;
+                            auto& routeToSplit = changes.getRoutes()[i];
+                            size_t mid = routeToSplit.size() / 2;
+
+                            // First half to route j
+                            changes.getRoutes()[j].insert(
+                                changes.getRoutes()[j].end(),
+                                routeToSplit.begin(),
+                                routeToSplit.begin() + mid
+                            );
+
+                            // Second half to route k
+                            changes.getRoutes()[k].insert(
+                                changes.getRoutes()[k].end(),
+                                routeToSplit.begin() + mid,
+                                routeToSplit.end()
+                            );
+
+                            // Remove original route
+                            changes.getRoutes().erase(changes.getRoutes().begin() + i);
+
+                            // changes.print();
+                            if (changes.isFeasible(inst, false)) {
+                                sol = changes;
+                                return true;
+                            } else {
+                                // cout << "Split of route " << i << " into routes " << j << " and " << k << " doesn't work" << endl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // --- 3. Atomic relocation: LAST RESORT ---
+    for (int i = 0; i < int(sol.getRoutes().size()); i++) {
+        auto& routeFrom = sol.getRoutes()[i];
+
+        for (int n = 0; n < int(routeFrom.size()); n++) {
+            for (int j = 0; j < int(sol.getRoutes().size()); j++) {
+                if (i == j) continue;
+
+                for (int pos = 0; pos <= int(sol.getRoutes()[j].size()); pos++) {
+                    changes = sol;
+
+                    auto node = routeFrom[n];
+                    changes.getRoutes()[j].insert(changes.getRoutes()[j].begin() + pos, node);
+
+                    int i_adj = (j < i) ? i + 1 : i;
+                    changes.getRoutes()[i_adj].erase(changes.getRoutes()[i_adj].begin() + n);
+
+                    if (changes.isFeasible(inst, false)) {
+                        sol = changes;
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
 // Relocation local search. Returns the route where insertion happened
 // We supose that every solution that is going through local search is feasible
 int relocationLocal (Solution &sol,Instance &inst, Matrix &cost_matrix){
@@ -862,9 +978,19 @@ Solution ssplit (vector<int> &route, Instance &inst, Matrix &cost_matrix){
         //         End if
         //     Until j > n or load(p) > Qp
     }
-    // I dont know what to do now, like, i have an implicit graph, ok, but what now?
 
     new_route = extract_solution(predecessor,route);
+    bool feas = true;
+    // This returns feasible routes but has no regard for maximum vehicles
+    while ((new_route.trailers_needed(inst)>inst.getTrailer_N() || new_route.trucks_needed()>inst.getTruck_N()) && feas){
+        // Forceful relocation
+        feas = ultra_forceful_relocation(new_route,inst,cost_matrix);
+        // exit(EXIT_SUCCESS);
+        if (!feas){
+            exit(EXIT_FAILURE);
+        }
+    }
+
     return new_route;
 }
 
@@ -938,7 +1064,6 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
     int alpha=0, beta=0, maxiternor, nParents; // i, p1, p2, route_local;
     uniform_int_distribution<int> dist(0,size-1);
     uniform_real_distribution<float> distfloat(0,1);
-
     // Assign costs for the population
     #pragma omp parallel for
     for(Solution& elem:pop){
@@ -1001,7 +1126,7 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
 
             while (true) {
                 int current = parallel_i.load();
-                if (current >= nParents) break;
+                if (current > nParents) break;
 
                 // Parent selection and crossover
                 int p1, p2;
@@ -1013,7 +1138,6 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter=
                         child = ssplit(child, probl, costMatrix);
                     }
                     child.cost = objectiveFunction(child, probl, costMatrix);
-
                     // Atomically claim a slot if we’re still under limit
                     int idx = parallel_i.fetch_add(1);
                     if (idx < nParents) {
@@ -1140,16 +1264,26 @@ int main(int argc, char* argv[]) {
     title = title.substr(0,title.find("_"));
     int mode = (title == "TTRP");
     std::cout << mode << std::endl;
+    // Extension
+    std::string ext = filename.substr(filename.find("/")+1,filename.size());
+    ext.erase(0,ext.find("_")+1);
+    ext.erase(0,ext.find("_")+1);
+    ext.erase(0,ext.find(".")+1);
 
-    
-    Instance instance(filename,mode);
-    // instance.print();
     Matrix distance_matrix;
-    distance_matrix = distanceMatrix(instance);
+    Instance instance;
 
-    // Code for CSV
-    // Instance instance;
-    // Matrix distance_matrix = instance.from_csv(filename);
+    if (ext == "txt"){    
+        instance = Instance(filename,mode);
+        // instance.print();
+        
+        distance_matrix = distanceMatrix(instance);
+    } else if (ext == "csv"){
+        // Code for CSV        
+        distance_matrix = instance.from_csv(filename);
+    }
+    // instance.print();
+    
     // instance.print();
     // instance.print();
 
@@ -1223,7 +1357,7 @@ int main(int argc, char* argv[]) {
     cout << "The cost of this solution is: " << best_cost << endl; 
 
     // Print to a CSV file
-    std::ofstream outFile("MCTTRP.csv", std::ios::app);
+    std::ofstream outFile("real_problems.csv", std::ios::app);
 
     // Get ID of file
     std::string id = filename.substr(filename.find("/")+1,filename.size());
@@ -1232,7 +1366,7 @@ int main(int argc, char* argv[]) {
     id = id.substr(0,id.find("."));
 
     if (outFile.is_open()) {
-        outFile << id << "," << best_cost << "," << float(timer)/1000. << "," << result << endl;
+        outFile << id << "," << best_cost << "," << float(timer)/1000. << "," << result;
         outFile.close(); // Always close the file
         std::cout << "Data appended successfully.\n";
     } else {
