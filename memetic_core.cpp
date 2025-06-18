@@ -228,7 +228,7 @@ void relocate (Solution &sol,int element, int route, int position){
 }
 
 // Forceful relocation. Forces to relocate a route even if it doesnt improve the solution
-bool forceful_relocation(Solution &sol,Instance &inst, Matrix &cost_matrix){
+bool forceful_relocation(Solution &sol,Instance &inst){
     Solution changes;
     sol.print();
     for(int i=0;i<int(sol.getRoutes().size());i++){
@@ -251,7 +251,7 @@ bool forceful_relocation(Solution &sol,Instance &inst, Matrix &cost_matrix){
     return false;
 }
 
-bool ultra_forceful_relocation(Solution &sol,Instance &inst, Matrix &cost_matrix){
+bool ultra_forceful_relocation(Solution &sol,Instance &inst){
     Solution changes;
     // sol.print();
     int numRoutes = sol.getRoutes().size();
@@ -565,7 +565,7 @@ Solution ssplit (vector<int> &route, Instance &inst, Matrix &cost_matrix){
     // This returns feasible routes but has no regard for maximum vehicles
     while ((new_route.trailers_needed(inst)>inst.getTrailer_N() || new_route.trucks_needed()>inst.getTruck_N()) && feas){
         // Forceful relocation
-        feas = ultra_forceful_relocation(new_route,inst,cost_matrix);
+        feas = ultra_forceful_relocation(new_route,inst);
         // exit(EXIT_SUCCESS);
         if (!feas){
             exit(EXIT_FAILURE);
@@ -627,8 +627,8 @@ void drawProgressBar(const std::string& name, int value, int max_value, int bar_
 void updateProgress(int alpha, int beta, int max_value_alpha, int max_value_beta) {
     // Move the cursor up two lines
     std::cout << "\033[F\033[F"; // ANSI escape codes to move cursor up
-    drawProgressBar("Maxiter", alpha, max_value_alpha);
-    drawProgressBar("MaxiterNC", beta, max_value_beta);
+    drawProgressBar("Maxiter", alpha, max_value_alpha, 40);
+    drawProgressBar("MaxiterNC", beta, max_value_beta, 40);
     std::cout.flush();
 }
 
@@ -667,8 +667,8 @@ Solution memeticLoop(int size, Instance &probl, Matrix &costMatrix, int maxiter,
     //     pop[i].print();
     // }
     if(verbose){
-        drawProgressBar("Maxiter",alpha,maxiter);
-        drawProgressBar("MaxiterNC",beta,maxiternor);
+        drawProgressBar("Maxiter",alpha,maxiter,40);
+        drawProgressBar("MaxiterNC",beta,maxiternor,40);
     }
 
     while(alpha < maxiter && beta < maxiternor){

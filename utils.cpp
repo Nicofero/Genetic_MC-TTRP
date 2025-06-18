@@ -167,7 +167,7 @@ Matrix Instance::from_csv(string filename){
             clients.push_back(client);
         }
         
-        std::cout << "Parsed line " << i << ": " << line << std::endl;
+        // std::cout << "Parsed line " << i << ": " << line << std::endl;
         i++;
     }
     return cost_mat;
@@ -365,4 +365,30 @@ vector<int> Solution::to_1D_array(){
 void print_vector(const vector<int> &veect){
     for (int elem: veect) cout << elem << " ";
     cout << endl;
+}
+
+// Distance function
+float distance(Client a, Client b) {
+    return std::sqrt(pow(a.getX() - b.getX(), 2) + pow(a.getY() - b.getY(), 2));
+}
+
+// Creates distance matrix
+Matrix distanceMatrix(Instance instance) {
+    int n = instance.getnClients();
+    Matrix dist(n+1, n+1);
+    // distance from depot to clients
+    for(Client client: instance.getClients()){
+        dist.at(0, client.getId()) = distance(instance.getDepot(), client);
+        dist.at(client.getId(), 0) = dist.at(0, client.getId());
+    }
+    // distance from clients to clients
+    for(Client client1: instance.getClients()){
+        for(Client client2: instance.getClients()){
+            if(client1.getId() != client2.getId()){
+                dist.at(client1.getId(), client2.getId()) = distance(client1, client2);
+                dist.at(client2.getId(), client1.getId()) = dist.at(client1.getId(), client2.getId());
+            }
+        }
+    }
+    return dist;
 }

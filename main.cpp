@@ -1,5 +1,6 @@
 #include "utils.hpp"
 #include "memetic_core.hpp"
+#include <omp.h>
 
 using namespace std;
 
@@ -62,7 +63,7 @@ int main(int argc, char* argv[]) {
     cout << "The cost of this solution is: " << best_cost << endl; 
 
     // Print to a CSV file
-    std::ofstream outFile("real_problems.csv", std::ios::app);
+    std::ofstream outFile("metrics/real_problems.csv", std::ios::app);
 
     // Get ID of file
     std::string id = filename.substr(filename.find("/")+1,filename.size());

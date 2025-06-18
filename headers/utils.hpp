@@ -76,13 +76,13 @@ class Instance {
         std::vector<float> allDemand;       // All demand vector
     public:
         Instance(std::string filename,int mode = 0);
-        Instance() {};
+        Instance();
         void print();
         Matrix from_csv(std::string filename);
         Client getDepot();
         std::vector<Client> getVc_clients();
         std::vector<Client> getTc_clients();
-        std::vector<Client> getClients(){return clients;};
+        std::vector<Client> getClients();
         int getnClients();
         int getTruck_N();
         int getTrailer_N();
@@ -98,11 +98,11 @@ class Instance {
 
 class Solution {
     private:
-        std::vector<vector<int>> routes;        
+        std::vector<std::vector<int>> routes;        
     public:
         Solution();
         void addRoute(std::vector<int> route);
-        std::vector<vector<int>> &getRoutes();
+        std::vector<std::vector<int>> &getRoutes();
         std::vector<int> findElement(int elem);
         void print(bool in_line=false, std::ostream& out = std::cout);
         std::vector<int> toSingleRoute ();                
@@ -115,3 +115,9 @@ class Solution {
 };
 
 void print_vector(const std::vector<int> &veect);
+
+// Distance function
+float distance(Client a, Client b);
+
+// Creates distance matrix
+Matrix distanceMatrix(Instance instance);

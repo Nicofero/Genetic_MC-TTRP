@@ -28,10 +28,10 @@ Matrix randomSymMatrix(int size);
 void relocate (Solution &sol,int element, int route, int position);
 
 // Forceful relocation. Forces to relocate a route even if it doesnt improve the solution
-bool forceful_relocation(Solution &sol,Instance &inst, Matrix &cost_matrix);
+bool forceful_relocation(Solution &sol,Instance &inst);
 
 // Ultra forceful relocation. Forces to relocate a route even if it doesnt improve the solution
-bool ultra_forceful_relocation(Solution &sol,Instance &inst, Matrix &cost_matrix);
+bool ultra_forceful_relocation(Solution &sol,Instance &inst);
 
 // Relocation local search. Returns the route where insertion happened
 // We supose that every solution that is going through local search is feasible
@@ -47,7 +47,7 @@ void opt2Local (Solution &sol,int pos,Instance &probl, Matrix &costMatrix);
 void routeOpt ();
 
 // Tournament selection (4 participants)
-int tournamentSelection(vector<Solution> &candidates,Instance &probl, Matrix &costMatrix);
+int tournamentSelection(std::vector<Solution> &candidates,Instance &probl, Matrix &costMatrix);
 
 // Function to generate a random permutation of integers from 1 to size
 std::vector<int> generate_random_permutation(int size);
