@@ -1,0 +1,239 @@
+%%% CITIUS beamer (Theme) v0.9
+%
+% Copyright 2013 by Ismael Rodríguez
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/licenses/LICENSE for more details.
+
+%% Packages
+\RequirePackage{xkeyval}
+\RequirePackage{tikz}
+
+%% Options
+\gdef\@theline{0}
+\gdef\@thebox{}
+\DeclareOptionX{theline}[1]{\gdef\@theline{#1}}
+\DeclareOptionX{thebox}{\gdef\@thebox{title footer}}
+\ProcessOptionsX
+
+
+
+\mode<presentation>
+
+
+%% Remove navigation buttons at bottom
+\setbeamertemplate{navigation symbols}{}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FONTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setbeamerfont{title}{size=\Huge,series=\bfseries}
+\setbeamerfont{subtitle}{size=\large, series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large, series=\bfseries}
+\setbeamerfont{framesubtitle}{size=\footnotesize}
+\setbeamerfont{title author}{size=\large}
+\setbeamerfont{title institute}{size=\footnotesize}
+\setbeamerfont{title date}{size=\small}
+\setbeamerfont{foot line}{size=\scriptsize, series=\bfseries}
+\setbeamerfont{foot line small}{size=\tiny}
+\setbeamerfont{web page}{size=\scriptsize, family=\sffamily}
+\setbeamerfont{section in head/foot}{series=\bfseries}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% COLORS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Definitions
+\xdefinecolor{gris citius claro}{gray}{0.95}
+\xdefinecolor{gris citius oscuro}{gray}{0.30}
+\xdefinecolor{gris citius titlepage oscuro}{gray}{0.25}
+\xdefinecolor{gris citius titlepage claro}{gray}{0.50}
+\xdefinecolor{laranxa citius}{rgb}{1.0000000, 0.4, 0.2}
+\xdefinecolor{azul usc}{rgb}{0.01176,0.27,0.56}
+
+%% Generals
+\setbeamercolor{linea gris}{bg=gris citius oscuro}
+\setbeamercolor{section in toc}{fg=black}
+\setbeamercolor{normal text}{fg=gris citius oscuro}
+\setbeamercolor{button}{fg=black}
+
+%% Title page
+\setbeamercolor{title}{fg=gris citius titlepage oscuro}
+\setbeamercolor{subtitle}{fg=gris citius titlepage claro}
+\setbeamercolor{title footer}{fg=white, bg=gris citius claro}
+
+%% Frame
+\setbeamercolor{section in head/foot}{fg=white}
+\setbeamercolor{header citius}{fg=white,bg=azul usc}
+\setbeamercolor{frametitle}{fg=gris citius oscuro,bg=white}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ELEMENTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Blocks
+\setbeamercolor{block title}{parent=header citius}
+\setbeamercolor{block title alerted}{use=alerted text,fg=white,bg=alerted text.fg!85!black}
+\setbeamercolor{block title example}{use=example text,fg=white,bg=example text.fg!85!black}
+
+\setbeamercolor{block body}{parent=normal text,use=block title,bg=gris citius claro}
+\setbeamercolor{block body alerted}{parent=normal text,use=block title alerted,bg=block title alerted.bg!10!bg}
+\setbeamercolor{block body example}{parent=normal text,use=block title example,bg=block title example.bg!10!bg}
+
+%% LISTS
+\defbeamertemplate{itemize item}{tri}{{\hbox{{\bfseries\large\usebeamercolor[bg]{header citius}\rule[.25ex]{.75ex}{.75ex}\hskip-2pt}}}}
+\defbeamertemplate{itemize subitem}{tri}{\small\hbox{{\bfseries\large\usebeamercolor[bg]{header citius}$\triangleright$\hskip-2pt}}}
+\defbeamertemplate{itemize subsubitem}{tri}{{\scriptsize{\hbox{\bfseries\usebeamercolor[bg]{header citius}$\bullet$\hskip-2pt}}}}
+\setbeamertemplate{items}[tri]
+
+\defbeamertemplate{enumerate item}{tri}{{\usebeamercolor[bg]{header citius}\insertenumlabel}}
+\defbeamertemplate{enumerate subitem}{tri}{{\usebeamercolor[bg]{header citius}\insertenumlabel.\insertsubenumlabel}}
+\defbeamertemplate{enumerate subsubitem}{tri}{{\usebeamercolor[bg]{header citius}\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}}
+\setbeamertemplate{enumerate items}[tri]
+
+\setbeamertemplate{section in toc}[sections numbered]
+
+%% Captions
+\setbeamertemplate{caption}{{\usebeamercolor[bg]{header citius}\insertcaptionname}: \insertcaption}
+
+%% Buttons
+\setbeamertemplate{button}{{\normalsize\insertbuttontext}}
+\hypersetup{colorlinks,allcolors=black}
+
+%% Bibliography
+\setbeamertemplate{bibliography item}{{\usebeamercolor[bg]{header citius}\insertbiblabel}}
+\setbeamercolor{bibliography entry author}{fg=gris citius oscuro}
+\setbeamercolor{bibliography entry title}{fg=gris citius oscuro}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% HEADLINE 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setbeamertemplate{headline}{
+    \hypersetup{colorlinks,allcolors=white}
+    \begin{beamercolorbox}[wd=\paperwidth,ht=2.5ex,dp=1.125ex]{header citius}
+        \insertsectionnavigationhorizontal{\paperwidth}{\hfill}{\hfill}
+    \end{beamercolorbox}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FRAME TITLE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setbeamertemplate{frametitle}{
+    \nointerlineskip
+   
+    \begin{beamercolorbox}[sep=10pt,ht=30pt,wd=\paperwidth]{frametitle}
+        \insertframetitle\par
+        \ifx\insertframesubtitle\empty
+            \vskip-2pt
+        \else
+            {\hskip20pt \usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle\strut\par}
+            \vskip-9pt
+        \fi
+    \end{beamercolorbox}
+    
+    \vskip-18pt
+    \begin{beamercolorbox}[ht=0.3pt,wd=\@theline\paperwidth]{linea gris}
+        \hfill
+    \end{beamercolorbox}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FOOTER 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setbeamertemplate{footline}
+{
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.905\paperwidth,ht=0ex,dp=0ex,sep=2pt,right]{}%
+        \centering\usebeamerfont{foot line small}\usebeamercolor[bg]{pages in head/foot}\insertshortdate%
+    \end{beamercolorbox}%
+
+    \begin{beamercolorbox}[wd=.095\paperwidth,ht=0ex,dp=0ex,sep=2pt,right]{pages in head/foot}%
+        \usebeamerfont{foot line} \hfill \insertframenumber{}\raisebox{-2pt}{/\usebeamerfont{foot line small}\bfseries\inserttotalframenumber}\hspace*{1pt}%
+    \end{beamercolorbox}%
+  } %
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TITLE PAGE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setbeamertemplate{title page}{
+    % \nointerlineskip
+    % \begin{centering}        
+   
+    % %% Title section
+    % \begin{beamercolorbox}[ht=.4\paperheight,wd=\paperwidth]{none}
+    %     \leftskip20pt
+    %     {\usebeamerfont{title}\usebeamercolor{title}\inserttitle\par}
+    %     \vskip20pt
+    %     {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    % \end{beamercolorbox}
+    % \vskip0.15\paperheight
+    
+    % %% Author section
+    % \begin{beamercolorbox}[ht=.2\paperheight,wd=\paperwidth]{none}
+    %     \leftskip20pt
+    %     {\usebeamerfont{title author}\insertauthor\par}
+    %     \ifx\insertinstitute\empty
+    %     \else
+    %         \vskip10pt
+    %         {\usebeamerfont{title institute}\insertinstitute\par}
+    %     \fi
+    %     \vskip10pt
+    %     {\usebeamerfont{title date}\insertdate\par}
+    % \end{beamercolorbox}
+    % \vskip0.1\paperheight
+    %  \end{centering}
+    % \vskip4pt
+    
+    % \begin{beamercolorbox}[sep=10pt,ht=.135\paperheight,wd=\paperwidth]{\@thebox}
+    %     \hfill
+    %     \includegraphics[height=30pt]{logomath.pdf}
+    %     % \hskip10pt
+    %     % \includegraphics[height=30pt]{figuras/presentacion/etse.jpeg}
+    %     %\includegraphics[height=20pt]{img/logo_etse.png}
+    % \end{beamercolorbox}
+    \vbox{}
+      \vfill
+      \begin{centering}
+        {\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par}
+        \vskip1em
+        {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+        \vskip1.5em
+        {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+        \vskip1em
+        {\usebeamerfont{institute}\usebeamercolor[fg]{institute}\insertinstitute\par}
+        \vskip1em
+        {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+        
+      \end{centering}
+      \begin{beamercolorbox}[sep=10pt,ht=.135\paperheight,wd=\paperwidth]{\@thebox}
+            
+            \hfill
+            \includegraphics[height=30pt]{logomath.pdf}
+            %\includegraphics[height=20pt]{img/logo_etse.png}
+        \end{beamercolorbox}
+      \vfill
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TITLE PAGE BACKGROUND
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \setbeamertemplate{background}{
+%     \ifnum\thepage=1%
+%         \begin{tikzpicture}
+%             \node[opacity=.8,inner sep=0pt]{
+%                 \includegraphics[height=\paperheight,width=\paperwidth]{figuras/presentacion/background_new.pdf}};
+%         \end{tikzpicture}
+%     \fi
+% }
+
+\mode<all>

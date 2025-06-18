@@ -21,12 +21,15 @@
 \usepackage[utf8]{inputenc}					
 \usepackage[spanish]{babel}			
 \usepackage{tikz}
+\usetikzlibrary{arrows.meta}
 \usetikzlibrary{positioning}
+\usetikzlibrary{automata}
 \usepackage{appendix}
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{emptypage}
 \usepackage{subcaption}
+\usepackage{booktabs,multirow,array}
 
 
 \lstset{
@@ -298,6 +301,9 @@
 \section*{Resumen}
 
 % escribir aquí resumo en español
+Una metaheurística es un procedimiento de búsqueda de alto nivel diseñado para guiar heurísticas subordinadas con el objetivo de explorar eficazmente espacios de soluciones en problemas de optimización complejos, especialmente aquellos donde los métodos exactos resultan computacionalmente inviables. Estas técnicas no garantizan encontrar la solución óptima, pero buscan obtener soluciones de buena calidad en tiempos razonables, lo que las hace especialmente útiles en entornos reales. Dentro de este marco, destacan los algoritmos evolutivos, que se inspiran en principios de la evolución biológica para explorar espacios de búsqueda complejos. Entre ellos, los algoritmos genéticos y meméticos son especialmente relevantes. Los algoritmos genéticos emplean mecanismos como la selección, el cruce y la mutación para generar nuevas soluciones, mientras que los algoritmos meméticos combinan esta exploración global con estrategias de mejora local para optimizar aún más cada solución. Estos métodos han sido aplicados con éxito en la resolución de diversos problemas complejos, entre ellos los problemas de rutas. Estos consisten en encontrar el conjunto óptimo de caminos que debe seguir una flota de vehículos para atender a un conjunto de clientes. Una generalización de los problemas de rutas es el problema de rutas de camiones y tráileres multicompartimento (MC-TTRP). Este problema considera dos tipos de vehículos compartimentados, camiones y tráileres que deben ir remolcados, y dos tipos de clientes con diferentes restricciones de servicio y que requieren múltiples tipos de carga, lo que da lugar a la existencia de múltiples tipos de rutas para optimizar la distribución.\\
+
+En este trabajo se han explorado los algoritmos genéticos y meméticos, estudiando cómo funcionan los operadores utilizados y cómo obtener un algoritmo memético que es capaz de abordar un problema complejo. También se han estudiado los problemas de rutas, con un mayor énfasis en el MC-TTRP, ofreciendo un modelo de programación lineal y entera mixta que permita modelar el problema de manera matemática. Utilizando estos conocimientos se ha implementado un algoritmo en C++ que facilita la obtención de las rutas óptimas para cualquier instancia del MC-TTRP. 
 
 
 
@@ -305,6 +311,10 @@
 \vspace{1.5cm}
 
 \section*{Abstract}
+
+A metaheuristic is a high-level search procedure designed to guide subordinate heuristics in order to efficiently explore solution spaces in complex optimization problems, especially those where exact methods are computationally infeasible. These techniques do not guarantee to find the optimal solution, but seek to obtain good quality solutions in reasonable times, which makes them especially useful in real environments.Within this framework, evolutionary algorithms, which are inspired by principles of biological evolution to explore complex search spaces, stand out. Among them, genetic and memetic algorithms are particularly relevant. Genetic algorithms employ mechanisms such as selection, crossover and mutation to generate new solutions, while memetic algorithms combine this global exploration with local improvement strategies to further optimize each solution. These methods have been successfully applied in solving a variety of complex problems, including routing problems. These consist of finding the optimal set of paths that a fleet of vehicles must take to serve a set of customers. A generalization of routing problems is the multicompartment truck and trailer routing problem (MC-TTRP). This problem considers two types of compartmentalized vehicles, trucks and trailers that must be towed, and two types of customers with different service constraints and requiring multiple types of cargo, resulting in the existence of multiple types of routes to optimize distribution.\\
+
+In this work we have explored genetic and memetic algorithms, studying how the operators used work and how to obtain a memetic algorithm that allows us to solve a complex problem. Routing problems have also been studied, with a greater emphasis on the MC-TTRP, offering a linear and mixed integer programming model that enables us to model the problem in a mathematical way. Using this knowledge, a C++ algorithm has been implemented to obtain the optimal routes for any instance of the MC-TTRP.
 
 
 
@@ -324,22 +334,34 @@
 
 \markboth{INTRODUCCI\'ON}{INTRODUCCI\'ON}
 
+Los problemas de rutas de vehículos (VRP, por sus siglas en inglés) son un tipo de problema de optimización matemática que surgen en 1959 como una generalización de los problemas del comerciante viajero (TSP, por sus siglas en inglés) \cite{tsp-dantzig}, propuestos inicialmente por Dantzig en \cite{vrp-og}. En este tipo de problemas, se busca encontrar el conjunto de rutas óptimas que debe seguir un conjunto de vehículos para servir a un conjunto de clientes. A lo largo de los años, se han introducido variantes (o generalizaciones) a los problemas de rutas que añaden restricciones más complejas como pueden ser la existencia de múltiples depósitos (MDVRP), la existencia de ventanas temporales (VRPTW), la utilización de un vehículo con múltiples compartimentos (MC-VRP) o la existencia de distintos tipos de vehículos, como puede ser una flota de camiones y tráileres (TTRP). De la combinación de estas últimas dos variaciones nace el problema de rutas de camiones y tráileres multicompartimento o MC-TTRP. Este problema, igual que todas las otras versiones de los problemas de rutas, es un problema complejo y pertenece a la clase de problemas conocida como $NP$-duro. Este tipo de problemas hacen que encontrar un óptimo exacto sea muy complicado, y en ocasiones imposible. Para solucionar esto, se puede hacer uso de un tipo de algoritmos aproximados, como son las metaheurísticas.\\
+
+Las metaheurísticas son métodos que sirven para obtener soluciones de problemas complejos que orquestan la interacción entre procedimientos de mejora local y estrategias de alto nivel \cite{metah-hb}. Estos métodos ofrecen soluciones aproximadas en un tiempo razonable, sobre todo para aquellos problemas que no puedan ser tratados mediante métodos exactos, como los problemas $NP$-duros. Existe un muy grande conjunto de metaheurísticas, como los métodos basados en búsqueda tabú, el \textit{simulated annealing}, algoritmos basados en colonias de hormigas, o los algoritmos en los que nos centraremos, los algoritmos evolutivos. Los algoritmos evolutivos son un conjunto de metaheurísticas que se basa en principios de la evolución biológica para obtener buenas soluciones en problemas de optimización matemática \cite{evolutionary}. Dentro de este tipo de algoritmos, podemos destacar a los algoritmos genéticos, que a finales del siglo XX tomaron mucha importancia como métodos de resolución de problemas de optimización complejos. Sin embargo, el método que más nos interesa es una combinación de los algoritmos genéticos con algoritmos de búsqueda locales, lo que da lugar a la meteheurística denominada algoritmo memético. El paso de búsqueda local permite a los algoritmos genéticos una convergencia más rápida y precisa hacia el resultado óptimo del problema. Este tipo de algoritmo ha sido utilizado con muy buenos resultados para la resolución de problemas de rutas complejos \cite{MC-VRP-Memetic-ElFallahi,MC-VRP-Stochastic-Mendoza,ttrp-memetic}, lo que nos hace pensar en si es posible la definición de un algoritmo memético que permita la resolución del problema que nos concierne, el MC-TTRP.\\
+
+En este trabajo se definirá un posible algoritmo memético para la resolución del MC-TTRP. Para ello se buscarán cumplir los siguientes objetivos:
+\begin{itemize}
+    \item Estudio de las distintas metaheurísticas, con un interés principal en los algoritmos evolutivos, destacando los algoritmos genéticos y meméticos, que se estudiarán en mayor profundidad.
+    \item Estudio de los problemas de rutas, con un mayor hincapié tanto en el MC-TTRP, como en aquellos subproblemas que lo forman, el MC-VRP y el TTRP.
+    \item Definición e implementación de un algoritmo memético que permita la resolución del MC-TTRP.
+\end{itemize}
+
+Para cumplir estos objetivos se seguirá la siguiente estructura de documento. En el Capítulo \ref{chapter:1} se explicarán los distintos métodos de optimización matemática existentes, lo que permitirá tratar algoritmos evolutivos, como los algoritmos genéticos y los algoritmos meméticos. En el Capítulo \ref{chapter:2} se hará una introducción a los distintos problemas de rutas, se mostrará dónde se encuentra el MC-TTRP dentro de esta rama de la optimización y se ofrecerá una una definición formal completa del problema. El el Capítulo \ref{chapter:3} se mostrarán los pasos seguidos para realizar la implementación del algoritmo memético diseñado, incluyendo aquellas consideraciones tomadas sobre el modelo dado en el Capítulo \ref{chapter:2}. Se incluye también en este capítulo la descripción de los experimentos y los resultados obtenidos de los mismos. Estos resultados serán discutidos y razonados. Finalmente, el Capítulo \ref{chapter:4} incluye las conclusiones sacadas y los posibles pasos futuros que se podrían realizar para ampliar el trabajo realizado en el presente TFG. 
+
 %%%%%%%%%%%     fin da INTRODUCIÓN     %%%%%%%%%%%%%
 
 \mainmatter
 
 %%%%%%%%     Póñense os Capítulos    %%%%%%%%%%%%%%%
 
-\include{chapters/geneticos}
-\include{chapters/mcttrp}
-\include{chapters/algorithm}
+\include{chapters/chapter1}
+\include{chapters/chapter2}
+\include{chapters/chapter3}
 \include{chapters/conclusion}
 
 %%%%%%%%     Póñense a bibliografía, Apéndices e o índice alfabético     %%%%%%%%
 \appendix
 \renewcommand{\thechapter}{\Roman{chapter}}
 \include{chapters/anexos/anexo_complejidad}
-\include{chapters/anexos/anexo_NFLT}
 
 
 

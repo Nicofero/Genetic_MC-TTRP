@@ -1,9 +1,9 @@
-\chapter{El MC-TTRP}
-En este capítulo se tratarán los problemas de rutas, en específico, se definirá y se dará una expresión formal para el problema de rutas de tráileres y camiones multicompartimento (MC-TTRP por sus siglas en inglés). Este capítulo se basará en los primeros 2 capítulos de la tesis de doctoramiento \cite{laura-mcttrp}
+\chapter{El MC-TTRP}\label{chapter:2}
+En este capítulo se tratarán los problemas de rutas. En primer lugar, se presentarán los problemas de rutas y las posibles generalizaciones que existen. Posteriormente, se definirá y se dará una expresión formal para el problema de rutas de camiones y tráileres multicompartimento (MC-TTRP por sus siglas en inglés). Este capítulo se basa en los primeros 2 capítulos de la tesis de doctorado \cite{laura-mcttrp}.
 \section{Introducción a los problemas de rutas}
-Los problemas de rutas de vehículos (VRP por sus siglas en inglés) son algunos de los problemas más importantes dentro de la optimización combinatoria. Estos problemas buscan, como su nombre indica, encontrar el conjunto de rutas óptimas que deben seguir un conjunto de vehículos para servir a un conjunto de clientes. Los VRP fueron introducidos por primera vez durante la década de los 50 \cite{vrp-og} y nacen como una generalización del problema del viajante de comercio \cite{tsp-dantzig}. Ambos problemas pueden ser vistos como un problema de optimización de un grafo, para los que existen múltiples métodos de resolución exactos. Sin embargo, estos problemas pertenecen a una clase de problemas denominada NP-Duros (ver Anexo \ref{anexoCC}), por lo que el uso de métodos aproximados (como las metaheurísticas) es recomendado.\\
+Los problemas de rutas de vehículos (VRP por sus siglas en inglés) son algunos de los problemas más importantes dentro de la optimización combinatoria. Estos problemas buscan, como su nombre indica, encontrar el conjunto de rutas óptimas que deben seguir un conjunto de vehículos para servir a un conjunto de clientes. Los VRP fueron introducidos por primera vez durante la década de los 50 \cite{vrp-og} y nacen como una generalización del problema del viajante de comercio \cite{tsp-dantzig}. Ambos problemas pueden ser vistos como un problema de optimización sobre un grafo, para los que existen múltiples métodos exactos de resolución. Sin embargo, estos problemas pertenecen a una clase de problemas denominada $NP$-duros (ver Anexo \ref{anexoCC}), por lo que el uso de métodos aproximados (como las metaheurísticas) es necesario.\\
 
-El VRP original consiste en la generación de $n$ rutas tal que se puedan repartir bienes a un conjunto de clientes distribuidos geográficamente cuyas demandas son determinísticas, conocidas de antemano y no divisibles. Además, sólo existe un depósito desde donde todos los vehículos deben partir y regresar. La función objetivo de este tipo de problemas es la minimización de la distancia total recorrida. Se puede ver un ejemplo de un problema de este tipo en la Figura \ref{fig:VRP}.\\
+El VRP original consiste en la generación de $n$ rutas tal que se puedan repartir bienes a un conjunto de clientes distribuidos geográficamente cuyas demandas son deterministas, conocidas de antemano y no divisibles. Además, sólo existe un depósito desde donde todos los vehículos deben partir y regresar. La función objetivo de este tipo de problemas es la minimización de la distancia total recorrida. Se puede ver un ejemplo de un problema de este tipo en la Figura \ref{fig:VRP}.\\
 
 \begin{figure}[!bt]
     \centering
@@ -71,24 +71,24 @@ El VRP original consiste en la generación de $n$ rutas tal que se puedan repart
         \end{scope}
         
     \end{tikzpicture}
-    \caption{Posible solución de un VRP. En esta solución se tienen $n$ vehículos.}
+    \caption{Posible solución de un VRP. En esta solución se utilizan $4$ vehículos.}
     \label{fig:VRP}
 \end{figure}
 
 Aparte de los problemas de rutas básicos, existen diversas variaciones. Cada variación cambia algún parámetro del problema o añade algún tipo de restricción. Por ejemplo, la demanda puede ser estocástica (VRPSD), pueden existir múltiples depósitos (MDVRP), pueden añadirse ventanas temporales (VRPTW), etc. El problema que nos concierne, el MC-TTRP, nace de la combinación de dos variaciones del problema de rutas:
 \begin{itemize}
-    \item Problema de rutas con múltiples compartimentos (MC-VRP). La demanda de los clientes se encuentra en múltiples compartimentos que no se pueden mezclar.
+    \item Problema de rutas con múltiples compartimentos (MC-VRP). La demanda de los clientes se transporta en múltiples compartimentos que no se pueden mezclar, y existen varios tipos distintos de carga que deben manejarse por separado.
     \item Problema de rutas con restricciones de accesibilidad. Existen varios tipos de vehículos, y cada vehículo puede acceder a un tipo específico de rutas.
 \end{itemize}
 
-Además de estas variantes, también se tendrán en cuenta otras restricciones extra como la capacidad máxima de transporte. Veamos cómo se define este problema.
+Además de estas variantes, también se tendrán en cuenta otras restricciones extra, como la capacidad máxima de transporte. Veamos cómo se define este problema.
 
 \section{Definición formal del MC-TTRP}
-Como se indicaba anteriormente, el problema a tratar es el problema de rutas de camiones y tráileres multicompartimento (MC-TTRP) basado en el problema de rutas de camiones y tráileres (TTRP por sus siglas en inglés, \cite{chao-ttrp}). En este problema se añaden restricciones de accesibilidad y 2 tipos de vehículos: camiones y camiones cargando un tráiler. Existen 2 tipos de clientes: aquellos a los que se puede acceder con el camión cargando un tráiler ($VC$) y aquellos a los que solo se puede acceder con un camión sin carga ($TC$). Si pensamos en la aplicación de este problema al mundo real, se ve que los $TC$ son aquellos clientes en centros de ciudades, regiones montañosas o pequeños pueblos, en los cuales no se puede maniobrar un tráiler completo. Los VC son el resto de los clientes. Para resolver este problema se definen 3 tipos de rutas:
+Como se indicaba anteriormente, el problema a tratar es el problema de rutas de camiones y tráileres multicompartimento (MC-TTRP) basado en el problema de rutas de camiones y tráileres (TTRP por sus siglas en inglés, \cite{chao-ttrp}). En este problema se añaden restricciones de accesibilidad y 2 tipos de vehículos: camiones y camiones cargando un tráiler (vehículo completo). Existen 2 tipos de clientes: aquellos a los que se puede acceder con el camión cargando un tráiler (cliente VC) y aquellos a los que solo se puede acceder con un camión sin tráiler (cliente TC). Si pensamos en la aplicación de este problema al mundo real, se ve que los clientes TC son aquellos clientes en centros de ciudades, regiones montañosas o pequeños pueblos, en los cuales no se puede maniobrar un tráiler completo. Los clientes VC son el resto de los clientes. Para resolver este problema se definen 3 tipos de rutas:
 \begin{itemize}
-    \item Rutas de camión ($RC$): Aquellas rutas que solo pueda circular un camión sin tráiler.
-    \item Rutas de tráileres ($RT$): Aquellas rutas por las que pueda circular un vehículo completo (camión remolcando un tráiler).
-    \item Rutas mixtas ($RM$): Estas rutas consisten de una ruta principal del tipo $RT$, pero que incluye subrutas de tipo $RC$. En este tipo de rutas el tráiler es aparcado en una de las localizaciones y sólo el camión recorre la subruta $RC$.
+    \item Rutas de camión (RC): Aquellas rutas por las que solo pueda circular un camión sin tráiler.
+    \item Rutas de tráileres (RT): Aquellas rutas por las que pueda circular un vehículo completo.
+    \item Rutas mixtas (RM): Estas rutas consisten en una ruta principal del tipo RT, pero que incluye subrutas de tipo RC. En este tipo de rutas el tráiler es aparcado en una de las localizaciones y sólo el camión recorre la subruta RC.
 \end{itemize}
 Podemos ver un ejemplo de una solución para un problema de este estilo en la Figura \ref{fig:TTRP}.
 
@@ -186,28 +186,28 @@ Podemos ver un ejemplo de una solución para un problema de este estilo en la Fi
         \end{scope}
         
     \end{tikzpicture}
-    \caption{Posible solución de un problema TTRP.}
+    \caption{Posible solución de un problema TTRP. En esta solución se utilizan 3 camiones y 2 tráileres.}
     \label{fig:TTRP}
 \end{figure}
 
-El segundo problema que añade el MC-TTRP es el problema de rutas multicompartimento. Esta nueva restricción indica que tanto los tráileres como los camiones tendrán múltiples compartimentos que no se pueden mezclar y con una capacidad máxima independiente. Veamos la formulación formal de este problema como un modelo de programación lineal en enteros mixta (PLEM).
+El segundo problema que añade el MC-TTRP es el problema de rutas multicompartimento. Esta nueva restricción indica que tanto los tráileres como los camiones tendrán múltiples compartimentos cuyos contenidos no se pueden mezclar y con una capacidad máxima independiente. Veamos la formulación formal de este problema como un modelo de programación lineal en enteros mixta (PLEM).
 
-\subsection{Modelo PLEM para el MC-TTRP}
+\subsection{Modelo PLEM para el MC-TTRP}\label{section:modelo-plem}
 Como se indica anteriormente, el modelo que se propone es un modelo de programación lineal en enteros mixta, y se utilizará una versión simplificada de aquel dado por \cite{laura-mcttrp}, donde se eliminan las restricciones de tiempo y aquellas relacionadas con la carga máxima legal.\\
 
-Este problema puede ser descrito de la siguiente manera. Sea $G=(N,E)$ un grafo no dirigido formado por un conjunto de nodos $N=\{0,1,\ldots,n\}$, que representan el depósito ($0$) y a los clientes ($1,\ldots,n$), y un conjunto $E=\{(i,j)\in N\times N\;|\;i\neq j\}$ que representa los ejes que unen los nodos. Se tiene que $N_1, N_2\subset N$ tal que $N_1$ contiene los $n_1$ nodos que corresponden a los $VC$ y $N_2$ contiene los $n-n_1$ nodos correspondientes a los $TC$. Para cada elemento $(i,j)\in E$ se asigna un coste no negativo $c_{ij}$, que representa la distancia entre los nodos $i$ y $j$. Para realizar el transporte se definen dos conjuntos: un conjunto $K^T=\{1,\ldots,m_L,\ldots,m_T\}$ de camiones y un conjunto $K^L=\{1,\ldots,m_L\}$ de tráileres. Para el primer conjunto se definen 2 subconjuntos: $K^T_1=\{1,\ldots,m_L\}$ y $K_2^T=\{m_L+1,\ldots,m_T\}$; que representan aquellos camiones que puedan remolcar un tráiler y aquellos que no respectivamente. Para estos conjuntos anteriores, se tiene que $m_l$ es el número de tráileres y $m_t$ el número de camiones ($m_l\leq m_t$), y todos los vehículos se consideran homogéneos. Se definen como $Q_T$ y $Q_L$ la capacidad de cada camión y cada tráiler respectivamente. Por consiguiente, la capacidad de un vehículo completo se define como $Q_T+Q_L$.\\
+Este problema puede ser descrito de la siguiente manera. Sea $G=(N,E)$ un grafo no dirigido formado por un conjunto de nodos $N=\{0,1,\ldots,n\}$, que representan el depósito ($0$) y a los clientes ($1,\ldots,n$), y un conjunto $E=\{(i,j)\in N\times N\;|\;i\neq j\}$ que representa los ejes que unen los nodos. Se tiene que $N_1, N_2\subset N$ tal que $N_1$ contiene los $n_1$ nodos que corresponden a los clientes VC y $N_2$ contiene los $n-n_1$ nodos correspondientes a los clientes TC. Para cada elemento $(i,j)\in E$ se asigna un coste no negativo $c_{ij}$, que representa la distancia entre los nodos $i$ y $j$. Para realizar el transporte se definen dos conjuntos: un conjunto $K^T=\{1,\ldots,m_L,\ldots,m_T\}$ de camiones y un conjunto $K^L=\{1,\ldots,m_L\}$ de tráileres. Para el primer conjunto se definen 2 subconjuntos: $K^T_1=\{1,\ldots,m_L\}$ y $K_2^T=\{m_L+1,\ldots,m_T\}$; que representan aquellos camiones que puedan remolcar un tráiler y aquellos que no respectivamente. Para estos conjuntos anteriores, se tiene que $m_L$ es el número de tráileres y $m_T$ el número de camiones ($m_L\leq m_T$), y todos los vehículos se consideran homogéneos. Se definen como $Q_T$ y $Q_L$ la capacidad de cada camión y cada tráiler respectivamente. Por consiguiente, la capacidad de un vehículo completo se define como $Q_T+Q_L$.\\
 
-Como se menciona al inicio de esta sección, y se observa en la Figura \ref{fig:TTRP}, existen 3 tipos de caminos posibles. Para las $RM$, el camino que realiza el vehículo completo se denomina ruta principal. Durante el recorrido del camino principal, es posible desacoplar el tráiler y dejarlo aparcado en un parking (un parking puede ser cualquier VC o incluso el depósito). Las subrutas comienzan y terminan en un parking de la ruta pricipal de la $RM$. Dentro de una subruta es posible servir a cualquier tipo de cliente. No existen restricciones en el número máximo de subrutas que puede tener una $RM$, ni tampoco en el número máximo de subrutas distintas que pueden comenzar desde el mismo parking, en el caso de que se satisfagan las restricciones de capacidad. Esto significa que la demanda de una $RM$ no puede exceder la capacidad de un vehículo completo ($Q_T+Q_L$), y $Q_T$ no puede ser sobrepasado en ninguna subruta. Para las $RT$, que solo pueden abastecer a los $VC$, la restricción que existe es que la demanda no puede ser mayor a la capacidad del vehículo completo. De manera similar, para las $RC$, que pueden abastecer a ambos tipos de clientes, la demanda de la ruta deberá ser inferior a la capacidad del camión $Q_T$.\\
+Como se menciona al inicio de esta sección, y se observa en la Figura \ref{fig:TTRP}, existen 3 tipos de caminos posibles. Para las rutas mixtas, el camino que realiza el vehículo completo se denomina ruta principal. Durante el recorrido del camino principal, es posible desacoplar el tráiler y dejarlo aparcado en un parking (un parking puede ser cualquier cliente VC o incluso el depósito). Las subrutas comienzan y terminan en un parking de la ruta pricipal de la RM. Dentro de una subruta es posible servir a cualquier tipo de cliente. No existen restricciones en el número máximo de subrutas que puede tener una ruta mixta, ni tampoco en el número máximo de subrutas distintas que pueden comenzar desde el mismo parking, en el caso de que se satisfagan las restricciones de capacidad. Esto significa que la demanda de una RM no puede exceder la capacidad de un vehículo completo ($Q_T+Q_L$), y $Q_T$ no puede ser sobrepasado en ninguna subruta. Para las rutas de tráileres, que solo pueden abastecer a los clientes VC, la restricción que existe es que la demanda no puede ser mayor a la capacidad del vehículo completo. De manera similar, para las rutas de camión, que pueden abastecer a ambos tipos de clientes, la demanda de la ruta deberá ser inferior a la capacidad del camión $Q_T$.\\
 
 % Me quede en el tercer párrafo:
 % For the sake of simplicity, it is also assumed that travel costs are the same for all
-Para mayor simplicidad, se supone que el coste de los viajes es el mismo para cualquier vehículo. Cada tráiler $r\in K^L$ está dividido en compartimentos, $H^L$, donde $Q_L^H$ representa la capacidad de los compartimento. Análogamente, cada camión $k\in K^T$ se divide en un conjunto de compartimentos $H^T$, y $Q_T^H$ representa las capacidades. Estos compartimentos (que no se pueden mezclar y deben servir únicamente a un cliente) sirven para dividir los distintos tipos de carga representados por el conjunto $F=\{1,\ldots,n_F\}$. Cada nodo (menos el depósito) tiene una demanda no negativa $d_{if}$ $(i\in N\setminus\{0\}=N^*,f\in F)$ por cada tipo de carga. La demanda de cada cliente deberá ser cumplida por un único vehículo y es posible cumplir la demanda utilizando múltiples compartimentos del mismo tipo de carga.\\
+Para mayor simplicidad, se supone que el coste de los viajes es el mismo para cualquier vehículo. Cada tráiler $r\in K^L$ está dividido en compartimentos, $H^L$, donde $Q_L^H$ representa la capacidad de los compartimentos. Análogamente, cada camión $k\in K^T$ se divide en un conjunto de compartimentos $H^T$, y $Q_T^H$ representa las capacidades. Estos compartimentos (que no se pueden mezclar y deben servir únicamente a un cliente) sirven para dividir los distintos tipos de carga representados por el conjunto $F=\{1,\ldots,n_F\}$. Cada nodo (menos el depósito) tiene una demanda no negativa $d_{if}$ $(i\in N\setminus\{0\}=N^*,f\in F)$ por cada tipo de carga. La demanda de cada cliente deberá ser cumplida por un único vehículo y es posible cumplir la demanda utilizando múltiples compartimentos del mismo tipo de carga.\\
 
-Con respecto a las variables de decisión del modelo, $x_{ij}^{kr}$ y $y_{ij}^{klv}$ (ambas binarias) están relacionadas con la construcción de rutas. La primera variable está relacionada con las rutas recorridas por un vehículo completo, y toma el valor $1$ si el camión $k\in K^T$ con el tráiler $r\in K^L$ pasa por el eje $(i,j)$; 0 si no. De manera similar, la segunda variable se relaciona con las rutas recorridas por un camión, tomando el valor $1$ si el camión $k\in K^T$ pasa por el eje $(i,j)$ en la ruta $v\in\mathcal{V}=\{1,\ldots,n\}$ con lugar de parking $l\in N_1\cup\{0\}=N_0^1$; 0 si no. En caso de aparcar en el depósito ($l=0$), el tipo de ruta se considerará $RC$. En otro caso, la variable hará referencia a una subruta de una $RM$. El resto de las variables empleadas por el modelo están relacionadas con los distintos compartimentos. En particular, $ZT^k_{i,f,ht}\in[0,1]$ representa la proporción del compartimento $ht\in H^T$ del camión $k\in K^T$ que lleva la carga $f\in F$ para el cliente $i\in N^*$, mientras que $U_{i,f,ht}^k$ es una variable binaria que toma el valor $1$ si $ZT^k_{i,f,ht}>0$ y 0 si no. Análogamente, se tiene que las variables $ZL^k_{i,f,hl}$ y $V_{i,f,hl}^k$ son el equivalente para los tráileres. Todas estas variables y notaciones se encuentran resumidas en el Cuadro \ref{tab:notation}.\\
+Con respecto a las variables de decisión del modelo, $x_{ij}^{kr}$ y $y_{ij}^{klv}$ (ambas binarias) están relacionadas con la construcción de rutas. La primera variable está relacionada con las rutas recorridas por un vehículo completo, y toma el valor $1$ si el camión $k\in K^T_1$ con el tráiler $r\in K^L$ pasa por el eje $(i,j)$; 0 si no. De manera similar, la segunda variable se relaciona con las rutas recorridas por un camión, tomando el valor $1$ si el camión $k\in K^T$ pasa por el eje $(i,j)$ en la ruta $v\in\mathcal{V}=\{1,\ldots,n\}$ con lugar de parking $l\in N_1\cup\{0\}=N_1^0$; 0 si no. En caso de aparcar en el depósito ($l=0$), el tipo de ruta se considerará RC. En otro caso, la variable hará referencia a una subruta de una RM. El resto de las variables empleadas por el modelo están relacionadas con los distintos compartimentos. En particular, $ZT^k_{i,f,ht}\in[0,1]$ representa la proporción del compartimento $ht\in H^T$ del camión $k\in K^T$ que lleva la carga $f\in F$ para el cliente $i\in N^*$, mientras que $U_{i,f,ht}^k$ es una variable binaria que toma el valor $1$ si $ZT^k_{i,f,ht}>0$ y 0 si no. Análogamente, se tiene que las variables $ZL^r_{i,f,hl}$ y $V_{i,f,hl}^k$ son el equivalente para los tráileres. Todas estas variables y notaciones se encuentran resumidas en el Cuadro \ref{tab:notation}.\\
 
-El MC-TTRP trata de determinar un conjunto de rutas que minimice el coste total de los ejes viajados tal que se cumplan todas las restricciones, como puede ser que se cumplan las demandas, que no se mezclen mercancías o que no se excedan las capacidades máximas. Veamos como utilizando esta notación podemos expresar el problema como un PLEM:
+El MC-TTRP trata de determinar un conjunto de rutas que minimice el coste total de los ejes viajados tal que se cumplan todas las restricciones, como puede ser que se cumplan las demandas, que no se mezclen mercancías o que no se excedan las capacidades máximas. Veamos como utilizando esta notación podemos expresar el problema como un PLEM de la siguiente manera:
 
-\begin{table}[t]
+\begin{table}[!t]
 \centering
 \caption{Notación para el MC-TTRP.}
 \label{tab:notation}
@@ -217,11 +217,11 @@ El MC-TTRP trata de determinar un conjunto de rutas que minimice el coste total 
 \hline
 \textbf{Conjuntos/parámetros} & \textbf{Definición} & \textbf{Parámetros} & \textbf{Definición} \\ \hline
 $\{0\}$ & Depósito & $n$ & Cantidad total de clientes \\
-$N_1$ & Conjunto de los VC & $n_1$ & Cantidad de los VC \\
-$N_2$ & Conjunto de los TC & $m_L$ & Cantidad de tráileres \\
+$N_1$ & Conjunto de los clientes VC & $n_1$ & Cantidad de los clientes VC \\
+$N_2$ & Conjunto de los clientes TC & $m_L$ & Cantidad de tráileres \\
 $N = \{0\} \cup N_1 \cup N_2$ & Conjunto de los nodos & $m_T$ & Cantidad de camiones \\
 $N^* = N \setminus \{0\}$ & Conjunto de los clientes & $c_{ij}$ & Distancia de $i$ a $j$ \\
-$N_0^1 = N_1 \cup \{0\}$ & Conjunto de los VC y el depósito & $n_F$ & Cantidad de cada tipo de carga \\
+$N_1^0 = N_1 \cup \{0\}$ & Conjunto de los VC y el depósito & $n_F$ & Cantidad de cada tipo de carga \\
 $K_1^T$ & Camiones que pueden cargar un tráiler & $d_{if}$ & Demanda del cliente $i$ de la carga $f$ \\
 $K_2^T$ & Camiones puros & $Q_T$ & Capacidad de un camión \\
 $K^T = K_1^T\cup K_2^T$ & Conjunto de los camiones & $Q_L$ & Capacidad de un tráiler \\
@@ -230,7 +230,7 @@ $F$ & Tipos distintos de carga & $Q_L^H$ & Capacidad del compartimento de un tr�
 $H^T$ & Compartimentos del camión & $H^L$ & Compartimentos del tráiler\\
 $\mathcal{V}$ & (Sub)Rutas que salen de una raíz & & \\ \hline
 \textbf{Variable} & \textbf{Definición} & & \\ \hline
-$x_{ij}^{k}$ & \rlap{Variable binaria igual a $1$ si el camión $k$ con el tráiler $r$ pasa por el eje $(i,j)$; 0 si no} & & \\
+$x_{ij}^{kr}$ & \rlap{Variable binaria igual a $1$ si el camión $k$ con el tráiler $r$ pasa por el eje $(i,j)$; 0 si no} & & \\
 $y_{ij}^{klv}$ & \rlap{Variable binaria igual a $1$ si el camión $k$ pasa por el eje $(i,j)$ en la (sub)ruta $v$ con parking $l$; 0 si no} & & \\
 $U_{i,f,ht}^k$ & \rlap{Variable binaria igual a $1$ si el compartimento $ht$ del camión $k$ lleva la carga $f$ para el cliente $i$; 0 si no} & & \\
 $V_{i,f,hl}^r$ & \rlap{Variable binaria igual a $1$ si el compartimento $hl$ del tráiler $r$ lleva la carga $f$ para el cliente $i$; 0 si no} & & \\
@@ -239,8 +239,6 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
 \end{tabular}%
 }
 \end{table}
-
-
 \allowdisplaybreaks
 % Bigass formula
 \begin{flalign}
@@ -257,11 +255,11 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
     % TC must be visited only one
     & \sum_{i\in N}\sum_{k\in K^T}\sum_{l\in N_1^0}\sum_{v\in \mathcal{V}}y_{ij}^{klv}=1, & \llap{$j\in N_2$}\label{eq-mcttrp:2.4}\\    
     % Depot cannot be present in any sub-tour
-    & \sum_{i\in N}\sum_{k\in K^T}\sum_{l\in N_1}\sum_{v\in \mathcal{V}}y_{ij}^{klv}=0, \label{eq-mcttrp:2.5}\\
+    & \sum_{i\in N}\sum_{k\in K^T}\sum_{l\in N_1}\sum_{v\in \mathcal{V}}y_{i0}^{klv}=0, \label{eq-mcttrp:2.5}\\
     % For each sub-tour or RC the truck goes from the parking spot or the depot to a customer not more than once  
     & \sum_{j\in N}y_{lj}^{klv}\leq 1, & \llap{$k\in K^T;\;l\in N_1^0;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.6}\\
     % If a VC cannot be served by a complete vehicle then it cannot be a parking spot
-    & y_{lj}^{klv} \leq \sum_{i\in N_1^0}\sum_{r\in K^L}x_{il}^{kr}, & \llap{$j\in N*;\;k\in K_1^T;\;l\in N_1;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.7}\\
+    & y_{lj}^{klv} \leq \sum_{i\in N_1^0}\sum_{r\in K^L}x_{il}^{kr}, & \llap{$j\in N^*;\;k\in K_1^T;\;l\in N_1;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.7}\\
     % Customers can belong to a sub-tour from a posible parking spot if that location is selected as a parking spot
     & y_{ij}^{klv} \leq \sum_{p\in N} y_{lp}^{klv}, & \llap{$i,j\in N;\;k\in K^T;\;l\in N_1^0;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.8}\\
     %
@@ -271,17 +269,17 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
     % Trucks with trailer cannot perform RC
     & \sum_{i\in N}\sum_{j\in N}\sum_{v\in \mathcal{V}}y_{ij}^{k0v}=0, & \llap{$k\in K_1^T;\;$} \label{eq-mcttrp:2.10}\\
     % For trucks without trailers there can be at most one RC (no multiple use of vehicles)
-    & \sum_{v\in \mathcal{V}}\sum_{j\in N*}y_{0j}^{k0v} \leq 1, & \llap{$k\in K_2^T;\;$} \label{eq-mcttrp:2.11}\\
+    & \sum_{v\in \mathcal{V}}\sum_{j\in N^*}y_{0j}^{k0v} \leq 1, & \llap{$k\in K_2^T;\;$} \label{eq-mcttrp:2.11}\\
     % The number of sub-tours is not limited
     & \sum_{j\in N_1}\sum_{r\in K^L}x_{0j}^{kr}\leq 1, & \llap{$k\in K_1^T;\;$} \label{eq-mcttrp:2.12}\\
     % The number of main routes cannot exceed one
     & \sum_{j\in N_1}\sum_{k\in K_1^T}x_{0j}^{kr}\leq 1, & \llap{$r\in K^L;\;$} \label{eq-mcttrp:2.13}\\
     % The VC customer demand cannot exceed the capacity of a truck
-    & \sum_{i\in N*}\sum_{\substack{j\in N* \\ j\neq l}}\sum_{f\in F}d_{jf}y_{ij}^{klv}\leq Q_T, & \llap{$k\in K_1^T;\;l\in N_1;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.14} \\
+    & \sum_{i\in N^*}\sum_{\substack{j\in N^* \\ j\neq l}}\sum_{f\in F}d_{jf}y_{ij}^{klv}\leq Q_T, & \llap{$k\in K_1^T;\;l\in N_1;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.14} \\
     % The TC customer demand cannot exceed the capacity of a truck
-    & \sum_{i\in N*}\sum_{j\in N*}\sum_{f\in F} d_{jf}y_{ij}^{k0v}\leq Q_T, & \llap{$k\in K_2^T;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.15} \\
+    & \sum_{i\in N}\sum_{j\in N^*}\sum_{f\in F} d_{jf}y_{ij}^{k0v}\leq Q_T, & \llap{$k\in K_2^T;\;v\in \mathcal{V};\;$} \label{eq-mcttrp:2.15} \\
     % A route demand cannot exceed qt+ql in a vehicle route
-    & \sum_{i\in N_1^0}\sum_{j\in N_1}\sum_{f\in F}d_{jf}x_{ij}^{kr} + \sum_{i\in N*}\sum_{\substack{j\in N* \\ j\neq l}}\sum_{l\in N_1}\sum_{v\in\mathcal{V}}\sum_{f\in F}d_{jf}y_{ij}^{klv}\leq Q_T+Q_L, & \llap{$k \in K_1^T;\;r\in K^L;\;$} \label{eq-mcttrp:2.16} \\
+    & \sum_{i\in N_1^0}\sum_{j\in N_1}\sum_{f\in F}d_{jf}x_{ij}^{kr} + \sum_{i\in N^*}\sum_{\substack{j\in N^* \\ j\neq l}}\sum_{l\in N_1}\sum_{v\in\mathcal{V}}\sum_{f\in F}d_{jf}y_{ij}^{klv}\leq Q_T+Q_L, & \llap{$k \in K_1^T;\;r\in K^L;\;$} \label{eq-mcttrp:2.16} \\
     % Maximum usage time for full vehicles (can be removed)
     % & 2.17
     % Maximum usage time for trucks (can be removed)
@@ -291,17 +289,17 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
     % Flow conservation for RC and sub-routes
     & \sum_{i\in N}y_{ij}^{klv} = \sum_{p\in N} y_{jp}^{klv}, & \llap{$j\in N;\;k\in K^T;\;l\in N_1^0;\;v\in\mathcal{V};\;$} \label{eq-mcttrp:2.19}\\
     % Flow conservation for RT and main routes
-    & \sum_{i\in N_0^1}x_{ij}^{kr} = \sum_{p\in N_0^1} x_{jp}^{kr}, & \llap{$j\in N_1^0;\; k\in K_1^T;\;r\in K^L;\;$} \label{eq-mcttrp:2.20}\\
+    & \sum_{i\in N^0_1}x_{ij}^{kr} = \sum_{p\in N^0_1} x_{jp}^{kr}, & \llap{$j\in N_1^0;\; k\in K_1^T;\;r\in K^L;\;$} \label{eq-mcttrp:2.20}\\
     % Disconnected cycle elimination on main tours
     & \sum_{i\in B}\sum_{j\in B}x_{ij}^{kr}\leq |B|-1, & \llap{$k\in K_1^T;\;r\in K^L;\;\forall B\subseteq N_1:|B|\geq2;\;$} \label{eq-mcttrp:2.21}\\
     % Disconnected cycle elimination on RC
     & \sum_{i\in B}\sum_{j\in B}y_{ij}^{klv}-\sum_{i\in B\cap N_1}\sum_{i\in N_1\textbackslash B}\sum_{r\in K^L}x_{ij}^{kr}\leq |B|-1, & \llap{\parbox[r]{5cm}{\raggedleft$k\in K_1^T;\;l\in N_1;\;\\ v\in\mathcal{V};\;\forall B \subseteq N:|B|\geq2;\;$}} \label{eq-mcttrp:2.22}\\
     % Disconnected cycle elimination on RT
-    & \sum_{i\in B}\sum_{j\in B} y_{ij}^{k0v} \leq B-1, & \llap{$k\in K_2^T;\;v\in\mathcal{V};\;\forall B\subseteq N: |B|\geq 2;\;$} \label{eq-mcttrp:2.23} \\
+    & \sum_{i\in B}\sum_{j\in B} y_{ij}^{k0v} \leq |B|-1, & \llap{$k\in K_2^T;\;v\in\mathcal{V};\;\forall B\subseteq N: |B|\geq 2;\;$} \label{eq-mcttrp:2.23} \\
     %
     %%%%%%%%%%%%%%%%%%%%% RELATIONS BETWEEN ROUTES AND LOAD DISTRIBUTION %%%%%%%%%%%%%%%%%%%%%
     %  If a truck in an RM or RT does not visit a VC, then that truck does not load goods for that customer in any of its compartment
-    & \frac{1}{|H^T|}\sum_{f\in F}\sum_{ht\in H^T}ZT^k_{j,f,ht} \leq \sum_{i\in N_0^1}\sum_{r\in K^L}x_{ij}^kr + \sum_{i\in N}\sum_{l\in N_1}\sum_{v\in\mathcal{V}}y_{ij}^{klv}, & \llap{$k\in K_1^T;\;j\in N_1;\;$} \label{eq-mcttrp:2.24} \\
+    & \frac{1}{|H^T|}\sum_{f\in F}\sum_{ht\in H^T}ZT^k_{j,f,ht} \leq \sum_{i\in N_1^0}\sum_{r\in K^L}x_{ij}^{kr} + \sum_{i\in N}\sum_{l\in N_1}\sum_{v\in\mathcal{V}}y_{ij}^{klv}, & \llap{$k\in K_1^T;\;j\in N_1;\;$} \label{eq-mcttrp:2.24} \\
     % % If a truck in a RC does not visit a VC, then that truck does not load products for that customer in any of its compartments
     & \frac{1}{|H^T|}\sum_{f\in F}\sum_{ht\in H^T}ZT^k_{j,f,ht} \leq \sum_{i\in N}\sum_{v\in\mathcal{V}}y_{ij}^{k0v}, & \llap{$k\in K_2^T;\;j\in N_1;\;$} \label{eq-mcttrp:2.25} \\
     % % If a trailer does not visit a VC then that trailer does not load goods for that customer in any of its compartments
@@ -309,7 +307,7 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
     % % If a trailer does not visit a TC then that trailer does not load goods for that customer in any of its compartments
     & \frac{1}{|H^T|}\sum_{f\in F}\sum_{ht\in H^T}ZT^k_{j,f,ht} \leq \sum_{i\in N}\sum_{l\in N_1^0}\sum_{v\in\mathcal{V}}y_{ij}^{klv}, & \llap{$k\in K^T;\;j\in N_2;\;$} \label{eq-mcttrp:2.27} \\
     % % If a complete vehicle visits a VC, then either the truck or the trailer is loaded with goods for that customer
-    & \sum_{i\in N_1^0} x_{ij}^{kr}\leq \sum_{f\in F}\sum_{ht\in H^T}Q_T^HZT^k_{j,f,ht} + \sum_{f\in F}\sum_{hl\in H^L}Q_L^HZL^r_{k,f,hl}, & \llap{$k\in K_1^T;\;r\in K^L;\;$} \label{eq-mcttrp:2.28} \\
+    & \sum_{i\in N_1^0} x_{ij}^{kr}\leq \sum_{f\in F}\sum_{ht\in H^T}Q_T^HZT^k_{j,f,ht} + \sum_{f\in F}\sum_{hl\in H^L}Q_L^HZL^r_{j,f,hl}, & \llap{$j\in N_1;\;k\in K_1^T;\;r\in K^L;\;$} \label{eq-mcttrp:2.28} \\
     % % If a VC is visited by a truck (in a RC), then the truck distributes goods for that customer
     & \sum_{i\in N}\sum_{v\in \mathcal{V}}y_{ij}^{k0v} \leq \sum_{f\in F}\sum_{ht\in H^T} Q_T^HZT^k_{j,f,ht}, & \llap{$k\in K_2^T;\;j\in N_1;\;$} \label{eq-mcttrp:2.29} \\
     % % If a truck in a sub-tour serves a VC, then that truck is loaded with goods for that customer
@@ -321,7 +319,7 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
     % % Every VC gets all its demand
     & \sum_{r\in K^L}\sum_{hl\in H^L}Q^H_LZL^r_{j,f,hl}+\sum_{k\in K^T}\sum_{ht\in H^T}Q^H_TZT^k_{j,f,ht} =d_{jf}, & \llap{$j\in N_1;\;f\in F;\;$} \label{eq-mcttrp:2.32} \\
     % % Every TC gets all its demand
-    & \sum_{K^T}\sum_{ht\in H^T}Q^H_TZT^k_{j,f,ht}=d_{jf}, & \llap{$j\in N_2;\;f\in F;\;$} \label{eq-mcttrp:2.33} \\
+    & \sum_{k\in K^T}\sum_{ht\in H^T}Q^H_TZT^k_{j,f,ht}=d_{jf}, & \llap{$j\in N_2;\;f\in F;\;$} \label{eq-mcttrp:2.33} \\
     % %
     % %%%%%%%%%%%%%%%%%%%%% VOLUME RESTRICTIONS %%%%%%%%%%%%%%%%%%%%%
     % % No trucks load is over the legal capacity (can be removed)
@@ -331,15 +329,15 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
     % % No truck load is over the capacity
     & \sum_{i\in N^*}\sum_{f\in F} ZT^k_{i,f,ht}\leq 1, & \llap{$k\in K^T;\;ht\in H^T;\;$} \label{eq-mcttrp:2.36} \\
     % % No trailer load is over the capacity
-    & \sum_{i\in N_1}\sum_{f\in F}ZL^k_{i,f,hl} \leq 1, & \llap{$k\in K^L;\;hl\in H^L;\;$} \label{eq-mcttrp:2.37} \\
+    & \sum_{i\in N_1}\sum_{f\in F}ZL^r_{i,f,hl} \leq 1, & \llap{$r\in K^L;\;hl\in H^L;\;$} \label{eq-mcttrp:2.37} \\
     %
     %%%%%%%%%%%%%%%%%%%%% TECHNICAL RESTRICTIONS %%%%%%%%%%%%%%%%%%%%%
     % Logical relation between U and ZT
-    & ZT^k_{i,f,ht}-U^k_{i,j,ht} \leq 0, & \llap{$i\in N^*;\;f\in F;\; k\in K^T;\; ht\in H^T;\;$} \label{eq-mcttrp:2.38} \\
+    & ZT^k_{i,f,ht}-U^k_{i,f,ht} \leq 0, & \llap{$i\in N^*;\;f\in F;\; k\in K^T;\; ht\in H^T;\;$} \label{eq-mcttrp:2.38} \\
     % Logical relation between V and ZL
-    & Zl^r_{i,f,hl}-V^r_{i,j,hl} \leq 0, & \llap{$i\in N_1;\;f\in F;\; r\in K^L;\; hl\in H^L;\;$} \label{eq-mcttrp:2.39} \\
+    & ZL^r_{i,f,hl}-V^r_{i,f,hl} \leq 0, & \llap{$i\in N_1;\;f\in F;\; r\in K^L;\; hl\in H^L;\;$} \label{eq-mcttrp:2.39} \\
     % Not mixing (truck)
-    & U^k_{i,f_1,ht} + U^k_{i,f_2,ht} \leq 1, & \llap{$i,j\in N^*;\;f_1,f_2\in F;\; f_1\neq f_2;\;k\in K^T;\;ht\in H^T;\;$} \label{eq-mcttrp:2.40} \\
+    & U^k_{i,f_1,ht} + U^k_{j,f_2,ht} \leq 1, & \llap{$i,j\in N^*;\;f_1,f_2\in F;\; f_1\neq f_2;\;k\in K^T;\;ht\in H^T;\;$} \label{eq-mcttrp:2.40} \\
     % Not mixing (trailer)
     & V^r_{i,f_1,hl} + V^r_{j,f_2,hl} \leq 1, & \llap{$i,j\in N_1;\;f_1,f_2\in F;\; f_1\neq f_2;\;r\in K^L;\;hl\in H^L;\;$} \label{eq-mcttrp:2.41} \\
     % Not mixing (compartment of truck)
@@ -359,13 +357,13 @@ $ZL_{i,f,hl}^r$ & \rlap{Proporción del compartimento $hl$ del tráiler $r$ carg
 Veamos ahora qué significa cada conjunto de estas ecuaciones:
 \begin{itemize}
     \bditem{Función objetivo} \eqref{eq-mcttrp:func-obj}: Esta función representa la minimización del coste de todos los caminos. El primer término hace referencia a los caminos recorridos por un vehículo completo y el segundo a aquellos recorridos por un camión.
-    \bditem{Restricciones de clientes} \eqref{eq-mcttrp:2.2}-\eqref{eq-mcttrp:2.8}: \eqref{eq-mcttrp:2.2} establece que cada VC debe estar presente exactamente una vez, o en la ruta principal o en una subruta de donde no es parking. \eqref{eq-mcttrp:2.4} es su análogo para los TC, en este caso la visita es en una subruta o en una $RC$. De \eqref{eq-mcttrp:2.3}, un VC puede estar presente 2 veces en el caso de que sea el lugar de parking de una subruta. \eqref{eq-mcttrp:2.5} indica que el depósito no puede estar presente en una subruta que comience en un cliente. La restricción \eqref{eq-mcttrp:2.6} indica que para cada subruta o $RC$, el camión va desde el punto de partida hasta los clientes como máximo 1 vez. \eqref{eq-mcttrp:2.7} implica que si a un VC no le sirve un vehículo completo, este lugar no puede ser un parking. Finalmente, \eqref{eq-mcttrp:2.8} describe que otros clientes solo pueden pertenecer a una subruta que comience desde un parking candidato en caso de que ese candidato sea elegido como un parking.
-    \bditem{Restricciones de vehículos} \eqref{eq-mcttrp:2.9}-\eqref{eq-mcttrp:2.16}: De \eqref{eq-mcttrp:2.9}, los camiones que no tienen un tráiler asociado no tienen una ruta principal. \eqref{eq-mcttrp:2.10} indica que los vehículos completos no pueden realizar $RC$. La Ecuación \eqref{eq-mcttrp:2.11} modela la condición de que no puede existir múltiple uso de vehículos, es decir cada camión (sin tráiler) tiene asociada como máximo una ruta. De las condiciones \eqref{eq-mcttrp:2.12}-\eqref{eq-mcttrp:2.13}, para los vehículos completos, el número de subrutas no está limitado, pero la cantidad de rutas principales no puede exceder uno. \eqref{eq-mcttrp:2.14} y \eqref{eq-mcttrp:2.15} definen que las demandas de una ruta. Estas no pueden exceder la capacidad de un camión, $Q_T$, en una subruta sin un tráiler. De manera similar, \eqref{eq-mcttrp:2.16} representa que las demandas de una ruta realizada por un vehículo completo no puede exceder su capacidad.
+    \bditem{Restricciones de clientes} \eqref{eq-mcttrp:2.2}-\eqref{eq-mcttrp:2.8}: \eqref{eq-mcttrp:2.2} establece que cada cliente VC debe estar presente exactamente una vez, o en la ruta principal o en una subruta de donde no es parking. \eqref{eq-mcttrp:2.4} es su análogo para los clientes TC, en este caso la visita es en una subruta o en una RC. De \eqref{eq-mcttrp:2.3}, un cliente VC puede estar presente 2 veces en el caso de que sea el lugar de parking de una subruta. \eqref{eq-mcttrp:2.5} indica que el depósito no puede estar presente en una subruta que comience en un cliente. La restricción \eqref{eq-mcttrp:2.6} indica que para cada subruta o RC, el camión va desde el punto de partida hasta los clientes como máximo 1 vez. \eqref{eq-mcttrp:2.7} implica que si a un cliente VC no le sirve un vehículo completo, este lugar no puede ser un parking. Finalmente, \eqref{eq-mcttrp:2.8} describe que otros clientes solo pueden pertenecer a una subruta que comience desde un parking candidato en caso de que ese candidato sea elegido como un parking.
+    \bditem{Restricciones de vehículos} \eqref{eq-mcttrp:2.9}-\eqref{eq-mcttrp:2.16}: De \eqref{eq-mcttrp:2.9}, los camiones que no tienen un tráiler asociado no tienen una ruta principal. \eqref{eq-mcttrp:2.10} indica que los vehículos completos no pueden realizar rutas de camión. La Ecuación \eqref{eq-mcttrp:2.11} modela la condición de que no puede existir múltiple uso de vehículos, es decir cada camión (sin tráiler) tiene asociada como máximo una ruta. De las condiciones \eqref{eq-mcttrp:2.12}-\eqref{eq-mcttrp:2.13}, para los vehículos completos, el número de subrutas no está limitado, pero la cantidad de rutas principales no puede exceder una. \eqref{eq-mcttrp:2.14} y \eqref{eq-mcttrp:2.15} definen las demandas de una ruta. Estas no pueden exceder la capacidad de un camión, $Q_T$, en una subruta sin un tráiler. De manera similar, \eqref{eq-mcttrp:2.16} representa que las demandas de una ruta realizada por un vehículo completo no pueden exceder su capacidad.
     \bditem{Restricciones de la formulación} \eqref{eq-mcttrp:2.19}-\eqref{eq-mcttrp:2.23}: \eqref{eq-mcttrp:2.19} y \eqref{eq-mcttrp:2.20} modelan la conservación de flujo en todas las posibles rutas. Las ecuaciones \eqref{eq-mcttrp:2.21}-\eqref{eq-mcttrp:2.23} representan la eliminación de ciclos para todos los tipos posibles de rutas. 
-    \bditem{Relación entre rutas y distribución de la carga} \eqref{eq-mcttrp:2.24}-\eqref{eq-mcttrp:2.31}: \eqref{eq-mcttrp:2.24} especifica que si un camión no visita a un VC en una $RM$ o una $RT$, entonces este camión no carga productos para ese cliente en ningún compartimento. De manera similar, de \eqref{eq-mcttrp:2.25}, si un camión no visita un VC en una $RC$, entonces no se cargan bienes para ese cliente. En la Ecuación \eqref{eq-mcttrp:2.26}, se tiene el análogo para tráileres. \eqref{eq-mcttrp:2.27} indica que si un camión no visita a un TC, entonces no carga bienes para ese cliente. La restricción \eqref{eq-mcttrp:2.28} indica que si un vehículo completo visita a un VC, entonces o el camión o su tráiler están cargados con bienes para ese cliente. De \eqref{eq-mcttrp:2.29}, si un VC es visitado por un camión, entonces el camión lleva productos para ese cliente. La condición \eqref{eq-mcttrp:2.30} dice que si un camión sirve a un VC en una subruta, entonces debe llevar bienes para ese cliente. Finalmente, \eqref{eq-mcttrp:2.31} indica que si un camión visita a un TC, entonces carga con bienes para ese cliente en sus compartimentos.
+    \bditem{Relación entre rutas y distribución de la carga} \eqref{eq-mcttrp:2.24}-\eqref{eq-mcttrp:2.31}: \eqref{eq-mcttrp:2.24} especifica que si un camión no visita a un cliente VC en una ruta mixto o de tráiler, entonces este camión no carga productos para ese cliente en ningún compartimento. De manera similar, de \eqref{eq-mcttrp:2.25}, si un camión no visita un cliente VC en una ruta de camión, entonces no se cargan bienes para ese cliente. En la Ecuación \eqref{eq-mcttrp:2.26}, se tiene el análogo para tráileres. \eqref{eq-mcttrp:2.27} indica que si un camión no visita a un cliente TC, entonces no carga bienes para ese cliente. La restricción \eqref{eq-mcttrp:2.28} indica que si un vehículo completo visita a un cliente VC, entonces o el camión o su tráiler están cargados con bienes para ese cliente. De \eqref{eq-mcttrp:2.29}, si un cliente VC es visitado por un camión, entonces el camión lleva productos para ese cliente. La condición \eqref{eq-mcttrp:2.30} dice que si un camión sirve a un cliente VC en una subruta, entonces debe llevar bienes para ese cliente. Finalmente, \eqref{eq-mcttrp:2.31} indica que si un camión visita a un cliente TC, entonces carga con bienes para ese cliente en sus compartimentos.
     \bditem{Restricciones de la demanda} \eqref{eq-mcttrp:2.32}-\eqref{eq-mcttrp:2.33}:Estas dos ecuaciones certifican que los dos tipos de clientes reciban toda su demanda.
     \bditem{Volumen de los bienes a transportar} \eqref{eq-mcttrp:2.36}-\eqref{eq-mcttrp:2.37}: La primera ecuación indica que ningún compartimento de los camiones sobrepasa su capacidad máxima. La segunda ecuación es la análoga para los tráileres.
-    \bditem{Restricciones técnicas en el proceso de carga} \eqref{eq-mcttrp:2.38}-\eqref{eq-mcttrp:2.43}: 
+    \bditem{Restricciones técnicas en el proceso de carga} \eqref{eq-mcttrp:2.38}-\eqref{eq-mcttrp:2.43}: \eqref{eq-mcttrp:2.38} define la relación lógica entre $U$ y $ZT$. \eqref{eq-mcttrp:2.39} define la relación lógica entre $V$ y $ZL$. En \eqref{eq-mcttrp:2.40} y \eqref{eq-mcttrp:2.41} se indica que no es posible mezclar productos en el mismo compartimento de un camión o un tráiler respectivamente. De \eqref{eq-mcttrp:2.42} y \eqref{eq-mcttrp:2.43} se tiene que no se pueden mezclar productos para distintos clientes en el mismo compartimento de un camión y un tráiler respectivamente.
     \bditem{Naturaleza de las variables} \eqref{eq-mcttrp:2.44}-\eqref{eq-mcttrp:2.49}: Como se indica al inicio de este capítulo, estas últimas restricciones hacen referencia al tipo de variables que se consideran para el modelo. 
 \end{itemize}
 

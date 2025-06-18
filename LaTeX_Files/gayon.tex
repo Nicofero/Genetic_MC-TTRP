@@ -1,0 +1,58 @@
+% Define the type of document:
+\documentclass[a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+% Define the language:
+\usepackage[spanish]{babel}
+
+% Filler text and filler math:
+\usepackage{blindtext}
+
+% Margins
+\usepackage[a4paper, inner=1.7cm, outer=4cm, top=2cm, bottom=2.5cm, bindingoffset=1.2cm, foot=0.25cm]{geometry}
+\usepackage{physics}
+\usepackage{amssymb}
+\usepackage{float}
+
+\begin{document}
+\section{Intro y objetivos}
+Buenos días, mi nombre es Nicolás Fernández Otero y hoy vengo a hablar de la utilización de los algoritmos meméticos para la resolución de un problema de rutas, el problema de rutas de camiones y tráileres multicompartimento o MC-TTRP.\\
+
+Los problemas de rutas de vehículos (o VRP) son un tipo de problema de optimización matemática que surgen como una generalización del problema del comerciante viajero o TSP. Este tipo de problemas pertenece a una clase de problemas denominada NP-duros, que contiene aquellos problemas computacionalmente intratables. Por ello, para su resolución deberán utilizarse métodos aproximados, como las metaheurísticas. En este trabajo se ha estudiado si los algoritmos evolutivos, como los genéticos y los meméticos pueden ser utilizado con éxito para la resolución de problemas de rutas complejos, en particular el MC-TTRP. Para ello se tratarán los siguientes objetivos.
+
+\begin{itemize}
+    \item Estudio de los algoritmos genéticos y meméticos.
+    \item Estudio de los problemas de rutas, específicamente el MC-TTRP.
+    \item Definición e implementación de un algoritmo memético que permita la resolución del MC-TTRP.
+\end{itemize}
+
+Para cumplir estos objetivos seguiremos la siguiente estructura. En primer lugar, se hará una introducción a la optimización matemática y a los problemas de búsquedas. En segundo lugar, se tratarán tanto los algoritmos genéticos como los meméticos. Posteriormente, se presentarán los problemas de rutas, dando una posible formulación matemática del MC-TTRP. Finalmente, se tratará el algoritmo memético desarrollado y los resultados obtenidos.
+
+\section{Introducción a la optimización}
+Comencemos haciendo una introducción a los problemas de optimización combinatoria. Un algoritmo es una secuencia de pasos lógicos o matemáticos que permiten la resolución de un problema computacional. Las soluciones factibles del problema computacional se denominan por la S caligráfica. Sin embargo, mediante un algoritmo no solo se obtienen soluciones factibles, sino que estos devuelven también soluciones infactibles. Los problemas computacionales se pueden dividir en 4 tipos principales:
+\begin{itemize}
+    \item Búsqueda de todas las soluciones de S.
+    \item Conteo del número de soluciones de $\scal$.
+    \item Determinar si existen soluciones en $\scal$.
+    \item Buscar una solución en $\scal$ tal que maximice o minimice una cierta función objetivo. Estos son los \textbf{problemas de optimización matemática}. 
+\end{itemize}
+Dentro de estos últimos problemas nos interesa un subconjunto denominado problemas de optimización combinatoria. Estos son problemas de optimización matemática que cumplen 3 condiciones:
+\begin{itemize}
+    \item El número de soluciones factibles es finito.
+    \item Para cualquier solución factible, existe un valor de la función objetivo.
+    \item Estos valores dados por la función objetivo pueden ser ordenados mediante un orden parcial.
+\end{itemize}
+A partir de este momento trabajaremos únicamente con problemas de minimización, que consisten en la obtención del elemento menor que el resto según el orden parcial dado por el problema combinatorio. Para obtener este mínimo se utilizará el concepto del algoritmo de búsqueda. Para definir los algoritmos de búsqueda será necesario tratar otros conceptos previos.\\
+
+Un espacio de búsqueda es un conjunto que representa todas las posibles soluciones del problema computacional, tanto factibles como infactibles, tal que el elemento óptimo del problema pertenezca al espacio.
+\section{Algoritmos genéticos}
+
+\section{Algoritmos meméticos}
+
+\section{Problemas de rutas}
+
+\section{Algoritmo memético para el MC-TTRP}
+
+\section{Pruebas y resultados}
+\end{document}
